@@ -65,10 +65,16 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y pulseaudio
-          pulseaudio --start --exit-idle-time=-1
-          pactl load-module module-null-sink sink_name=test_sink_a
-          pactl load-module module-null-sink sink_name=test_sink_b
-          pactl list short sinks
+          # Headless PulseAudio can stall without a session; bound every step
+          # with `timeout` and tolerate failure — the integration tests skip
+          # when no device is present rather than hang or hard-fail.
+          export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/tmp/pa-runtime}"
+          mkdir -p "$XDG_RUNTIME_DIR"
+          timeout 60 pulseaudio --start --exit-idle-time=-1 --log-target=stderr \
+            || echo "pulseaudio failed to start; device-dependent tests will skip"
+          timeout 20 pactl load-module module-null-sink sink_name=test_sink_a || true
+          timeout 20 pactl load-module module-null-sink sink_name=test_sink_b || true
+          timeout 20 pactl list short sinks || true
 
       - name: Install BlackHole virtual driver
         if: runner.os == 'macOS'
@@ -83,4 +89,4 @@ jobs:
           choco install vb-cable -y --no-progress
 
       - name: Run integration tests
-        run: go test -race -count=1 -tags=integration -p 1 ./devices/...
+        run: go test -race -count=1 -tags=integration -p 1 -timeout 120s ./devices/...
