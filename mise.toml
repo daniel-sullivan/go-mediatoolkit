@@ -1,0 +1,53 @@
+# Monorepo mode: mise discovers per-package `mise.toml` files in
+# subdirectories (e.g. libraries/opus/, resample/) and auto-prefixes
+# their task names with the package path. The root-level tasks below
+# are bare; mise renders them as `//:task` (root/aggregate) while
+# per-package tasks become `//libraries/opus:task`, `//resample:task`.
+#
+# Requires the environment variable `MISE_EXPERIMENTAL=1` (per
+# https://mise.jdx.dev/tasks/monorepo.html). See also
+# `task.monorepo_depth` / `task.monorepo_exclude_dirs` in mise settings.
+experimental_monorepo_root = true
+
+[tools]
+go = "1.26"
+
+[monorepo]
+config_roots = ["libraries/opus", "resample", "libraries/flac", "libraries/mp3", "libraries/aac"]
+
+# ─── Aggregate tasks across all packages ─────────────────────────────
+
+[tasks."generate"]
+description = "Run all code generators"
+run = "go generate ./..."
+
+[tasks."build"]
+description = "Build all packages"
+run = "go build ./..."
+
+# libraries/opus/internal/parity_tests/benchcmp needs specific clang
+# flags so the Cgo oracle runs scalar unfused float code matching Go's
+# //go:noinline fma_add chain. Propagating via env (cgo directive
+# CFLAGS block -fno-vectorize in the flag allowlist). See
+# libraries/opus/internal/parity_tests/benchcmp/cgo.go.
+[tasks."test"]
+description = "Run all tests"
+env = { CGO_CFLAGS = "-O2 -ffp-contract=off -fno-vectorize -fno-slp-vectorize -fno-unroll-loops", CGO_CFLAGS_ALLOW = ".*" }
+run = "go test ./..."
+
+[tasks."test:race"]
+description = "Run all tests with race detector"
+env = { CGO_CFLAGS = "-O2 -ffp-contract=off -fno-vectorize -fno-slp-vectorize -fno-unroll-loops", CGO_CFLAGS_ALLOW = ".*" }
+run = "go test -race ./..."
+
+[tasks."test:bench"]
+description = "Run all benchmarks"
+run = "go test -bench=. -benchmem ./..."
+
+[tasks."vet"]
+description = "Run go vet on all packages"
+run = "go vet ./..."
+
+[tasks."ci"]
+description = "Run full CI pipeline: generate, build, vet, test with race detector"
+depends = ["//:generate", "//:build", "//:vet", "//:test:race"]

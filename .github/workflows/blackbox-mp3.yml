@@ -1,0 +1,17 @@
+name: mp3 blackbox
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  mp3:
+    uses: ./.github/workflows/blackbox-reusable.yml
+    with:
+      codec: mp3
+      cache_paths: /tmp/lame-upstream

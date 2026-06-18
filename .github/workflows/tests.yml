@@ -1,0 +1,37 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      CC: clang
+      CXX: clang++
+      MISE_EXPERIMENTAL: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      # The default `go test ./...` links the optional cgo C reference backends
+      # (e.g. the opus amalgamation), so a C compiler is needed even though the
+      # shipping library is pure Go.
+      - name: Install C toolchain
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends clang pkg-config
+
+      - uses: jdx/mise-action@v2
+
+      - name: Trust mise config
+        run: mise trust --all
+
+      - name: Pure-Go build (zero C linked)
+        run: CGO_ENABLED=0 go build ./...
+
+      - name: Tests
+        run: go test ./...

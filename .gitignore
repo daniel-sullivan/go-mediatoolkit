@@ -1,0 +1,47 @@
+# Test binaries
+*.test
+
+# IDE
+.idea/
+*.iml
+
+# OS
+.DS_Store
+
+# Build
+/vendor/
+
+# Example binaries (go build ./.../examples/<name>/ drops the binary at repo root)
+/ambient_loop
+/decode
+/echo
+/echo.exe
+/encode
+/format_conversion
+/game_sfx
+/inspect
+/karaoke
+/largefile
+/list
+/metadata
+/multistream
+/multitrack
+/muxinspect
+/pipeline
+/play
+/playlist
+/plc
+/read
+/readdecode
+/record
+/roundtrip
+/simple
+/stereo
+/streaming
+/tags
+/variable_ratio
+/watch
+/write
+
+# Agent tooling (not part of the published library)
+.claude/

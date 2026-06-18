@@ -1,0 +1,86 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test-unit:
+    name: Unit tests (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+          check-latest: true
+
+      - name: Show Go version
+        run: go version
+
+      - name: Download modules
+        run: go mod download
+
+      - name: Run unit tests
+        run: go test -race -count=1 ./...
+
+  test-integration:
+    name: Integration tests (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+          check-latest: true
+
+      - name: Show Go version
+        run: go version
+
+      - name: Download modules
+        run: go mod download
+
+      - name: Install PulseAudio and create null sinks
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pulseaudio
+          pulseaudio --start --exit-idle-time=-1
+          pactl load-module module-null-sink sink_name=test_sink_a
+          pactl load-module module-null-sink sink_name=test_sink_b
+          pactl list short sinks
+
+      - name: Install BlackHole virtual driver
+        if: runner.os == 'macOS'
+        run: brew install blackhole-2ch
+
+      - name: Enable audio service and install VB-Cable
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Set-Service -Name Audiosrv -StartupType Automatic
+          Start-Service Audiosrv
+          choco install vb-cable -y --no-progress
+
+      - name: Run integration tests
+        run: go test -race -count=1 -tags=integration -p 1 ./devices/...

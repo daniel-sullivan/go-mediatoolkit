@@ -1,0 +1,27 @@
+# Resample library — mise tasks.
+# Task names are bare; monorepo mode (configured in the root mise.toml)
+# auto-prefixes them as `//resample:task`.
+
+[tasks."generate"]
+description = "Fetch sinc filter coefficients from libsamplerate and generate Go source files"
+run = "go generate ."
+
+[tasks."build"]
+description = "Build the resample package"
+run = "go build ."
+
+[tasks."test"]
+description = "Run resample tests"
+run = "go test ."
+
+[tasks."test:race"]
+description = "Run resample tests with race detector"
+run = "go test -race ."
+
+[tasks."test:bench"]
+description = "Run resample benchmarks"
+run = "go test -bench=. -benchmem ."
+
+[tasks."vet"]
+description = "Run go vet on the resample package"
+run = "go vet ."

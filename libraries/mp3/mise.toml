@@ -1,0 +1,118 @@
+# MP3 codec library — mise tasks
+# The C minimp3 decode reference is vendored under libminimp3/ and the LAME
+# 3.100 encode reference under liblame/; both are compiled inline via Cgo by
+# the cgo backend (decoder_cgo.go / encoder_cgo.go) and by the parity_tests/
+# oracle packages. No system install or external build is needed for normal
+# use.
+#
+# Task names below are bare (e.g. `test`, `parity`). Under monorepo mode
+# (`experimental_monorepo_root = true` in the root mise.toml +
+# MISE_EXPERIMENTAL=1), mise auto-prefixes these with the path to this
+# config so they appear as `//libraries/mp3:test` etc.
+#
+# Build tags
+# ----------
+#   mp3_strict — bit-exact parity mode. Selects FMA-free Go (no `a + b*c`
+#                fusing into FMADDS), matching the C cgo oracle which is
+#                built with `-ffp-contract=off` (plus the vectorization /
+#                unroll flags below). This is the mode the parity tests
+#                assert against. The default library build (no tags) selects
+#                FMA-fused / SIMD helpers and is within PSNR noise, not a
+#                bit-exact target.
+#
+# Parity-test CGO flags — the in-test minimp3 oracle is built with
+# `-ffp-contract=off -fno-vectorize -fno-slp-vectorize -fno-unroll-loops`
+# so it produces scalar unfused float code matching strict-mode Go. Go's
+# cgo flag-security allowlist rejects these in-source, so they are set via
+# CGO_CFLAGS env here (with CGO_CFLAGS_ALLOW=".*"). Each task repeats the
+# env block so it is inherited when invoked via `mise run` from inside
+# libraries/mp3/. The main-bits slice is integer-only and matches in both
+# modes, but the suite gates uniformly with the FP-bearing slices so a bare
+# `go test` stays clean and `parity` is the single bit-exact gate.
+[tasks."test"]
+description = "Run all MP3 package tests (strict build — bit-exact parity mode)"
+env = { CGO_CFLAGS = "-O2 -ffp-contract=off -fno-vectorize -fno-slp-vectorize -fno-unroll-loops", CGO_CFLAGS_ALLOW = ".*" }
+run = "go test -tags=mp3_strict -count=1 ./..."
+
+[tasks."parity"]
+description = "Run the MP3 parity suite (Go port vs vendored C minimp3 via cgo). Requires -tags=mp3_strict."
+env = { CGO_CFLAGS = "-O2 -ffp-contract=off -fno-vectorize -fno-slp-vectorize -fno-unroll-loops", CGO_CFLAGS_ALLOW = ".*" }
+run = "go test -tags=mp3_strict -count=1 ./internal/parity_tests/..."
+
+# End-to-end decode gate: encode a sine via the cgo libmp3lame path (so the
+# input is a genuine MP3), then decode it with BOTH the cgo minimp3 decoder and
+# the pure-Go port (NewNativeDecoder) and assert the int16 PCM is bit-exact.
+# Needs both cgo (the minimp3 oracle + the LAME encoder to fabricate input) and
+# the mp3lame tag (LGPL encoder fence), plus mp3_strict so the port is FMA-free
+# and the assertion is maxDiff==0. This is the decode wiring gate — it proves
+# the streaming Decoder actually decodes and matches the reference end-to-end.
+[tasks."decode-parity"]
+description = "End-to-end: encode a sine (cgo LAME) and assert pure-Go decode == cgo minimp3 decode, bit-exact. Requires -tags='mp3lame mp3_strict'."
+env = { CGO_CFLAGS = "-O2 -ffp-contract=off -fno-vectorize -fno-slp-vectorize -fno-unroll-loops", CGO_CFLAGS_ALLOW = ".*" }
+run = "go test -tags='mp3lame mp3_strict' -count=1 -run TestNativeDecodeMatchesCgo ."
+
+# Encoder parity gate. The pure-Go LAME ENCODER port (internal/nativemp3) is a
+# derivative of the LGPL LAME, so its parity_tests oracle packages compile only
+# under the mp3lame tag (the LGPL fence) — the bare `parity` task above runs
+# -tags=mp3_strict only and so covers just the decoder oracles. This task adds
+# the encoder oracles (frame-encode-dispatch, mdct-analysis, psychoacoustic-
+# model, huffman-encode, quantize-pvt, takehiro, bitstream-format) under
+# -tags='mp3lame mp3_strict' with the FP-off env so each pure-Go encode stage is
+# bit-exact with the vendored libmp3lame oracle. `parity` + `encode-parity`
+# together are the full bit-exact gate.
+[tasks."encode-parity"]
+description = "Encoder parity suite (pure-Go LAME port vs vendored libmp3lame via cgo). Requires -tags='mp3lame mp3_strict'."
+env = { CGO_CFLAGS = "-O2 -ffp-contract=off -fno-vectorize -fno-slp-vectorize -fno-unroll-loops", CGO_CFLAGS_ALLOW = ".*" }
+run = "go test -tags='mp3lame mp3_strict' -count=1 ./internal/parity_tests/..."
+
+# End-to-end encode gate (no cgo needed): encode a sine with the pure-Go LAME
+# port (NewNativeEncoder runs the real lame_encode_buffer pipeline) and decode
+# it back with the pure-Go minimp3 port (NewNativeDecoder), asserting the
+# recovered tone is within MP3 tolerance (segmental SNR). This is the encoder
+# WIRING gate — the mirror of decode-parity for the write path — and the one
+# the task's CGO_ENABLED=0 -tags mp3lame round-trip requirement maps to.
+[tasks."encode-roundtrip"]
+description = "End-to-end: pure-Go encode a sine and pure-Go decode it back within MP3 tolerance. Requires -tags=mp3lame (CGO_ENABLED=0 OK)."
+run = "CGO_ENABLED=0 go test -tags=mp3lame -count=1 -run TestPureGoEncodeRoundTrip ."
+
+# Black-box parity gate: build the LAME 3.100 CLI from the pristine SourceForge
+# release tarball (the exact release the pure-Go encoder is a 1:1 port of) with
+# the scalar / FP-off CFLAGS and no nasm, then drive both it and the pure-Go
+# port out-of-process with identical synthetic PCM and assert the encoded MP3 is
+# byte-identical. Nothing in the vendored C tree or the cgo oracles participates
+# — the reference is stock upstream LAME invoked as an external process. The
+# script clones+builds automatically; the Go test runs under
+# -tags 'mp3_blackbox,mp3lame,mp3_strict'. See the blackbox/ README.
+[tasks."parity:blackbox"]
+description = "Black-box parity vs unmodified upstream LAME 3.100. Downloads + builds the lame CLI automatically, then asserts byte-identical encode."
+run = "./internal/parity_tests/blackbox/run.sh"
+
+# Benchmarks — native nativemp3 slices vs the vendored C minimp3 (cgo). Both
+# bench tasks compile the minimp3 oracle with the same scalar flags as the
+# parity oracle (`-ffp-contract=off -fno-vectorize -fno-slp-vectorize
+# -fno-unroll-loops`, plus MINIMP3_NO_SIMD in-source) so the C column is an
+# apples-to-apples scalar reference, NOT a production minimp3 build. Go's cgo
+# flag-security allowlist rejects these in-source, so they are set via
+# CGO_CFLAGS here (with CGO_CFLAGS_ALLOW=".*"). `bench` runs the shipping
+# default Go build (FMA-fused); `bench:strict` runs the FMA-free parity build.
+#
+# SCOPE: the benchcmp harness measures the integer bit-reader slice (get_bits)
+# because it has a runnable native + cgo oracle path and is bit-exact in both
+# build modes. The rest of the nativemp3 port (granule decode, IMDCT, synthesis,
+# huffman, quantization) is functional but lacks an equally-simple oracle;
+# benchmarking those requires frame round-trip end-to-end tests. Extend as
+# oracle harnesses for other slices land.
+[tasks."bench"]
+description = "Run Go vs C comparison benchmarks for the ported slices (default FMA-fused build — what ships)"
+env = { CGO_CFLAGS = "-O2 -ffp-contract=off -fno-vectorize -fno-slp-vectorize -fno-unroll-loops", CGO_CFLAGS_ALLOW = ".*" }
+run = "go test -bench=. -benchtime=2s -benchmem -run=^$ ./internal/parity_tests/benchcmp/"
+
+[tasks."bench:strict"]
+description = "Benchmarks under the mp3_strict build (FMA-free parity mode) for apples-to-apples vs the C oracle"
+env = { CGO_CFLAGS = "-O2 -ffp-contract=off -fno-vectorize -fno-slp-vectorize -fno-unroll-loops", CGO_CFLAGS_ALLOW = ".*" }
+run = "go test -tags=mp3_strict -bench=. -benchtime=2s -benchmem -run=^$ ./internal/parity_tests/benchcmp/"
+
+[tasks."bench:production"]
+description = "Benchmarks against a production-style C minimp3 (default -O2, no scalar-oracle flags) — Go default build. Shows a more realistic C number."
+env = { CGO_CFLAGS = "-O2", CGO_CFLAGS_ALLOW = ".*" }
+run = "go test -bench=. -benchtime=2s -benchmem -run=^$ ./internal/parity_tests/benchcmp/"

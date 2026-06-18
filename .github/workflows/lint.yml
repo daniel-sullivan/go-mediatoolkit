@@ -1,0 +1,42 @@
+name: lint
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    env:
+      MISE_EXPERIMENTAL: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: jdx/mise-action@v2
+
+      - name: Trust mise config
+        run: mise trust --all
+
+      - name: gofmt
+        run: |
+          unformatted="$(gofmt -l .)"
+          if [ -n "$unformatted" ]; then
+            echo "::error::gofmt drift — run 'gofmt -w .' on:"
+            echo "$unformatted"
+            exit 1
+          fi
+
+      # Two vet analyzers are disabled because they false-positive on
+      # intentional code; all ~20 others stay enabled:
+      #   stdmethods — timeline.Seek(frames int64) error is a deliberate
+      #                frame-based API, not io.Seeker.
+      #   asmdecl    — hand-written SIMD kernels (e.g. celtInnerProdSIMD) carry
+      #                frame-size annotations vet mis-computes; the kernels are
+      #                covered by the bit-exact parity gates instead.
+      - name: go vet
+        run: CGO_ENABLED=0 go vet -stdmethods=false -asmdecl=false ./...

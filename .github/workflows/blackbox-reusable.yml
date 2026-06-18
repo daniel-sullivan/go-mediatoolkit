@@ -1,0 +1,60 @@
+name: blackbox-reusable
+
+# Reusable black-box parity job. Each codec has a thin caller workflow
+# (blackbox-<codec>.yml) so it gets its own status badge — GitHub renders one
+# badge per workflow file, not per job. The caller passes the codec key and the
+# upstream build dir(s) to cache.
+#
+# A black-box run clones a *pristine, version-matched* upstream reference
+# (xiph/opus, xiph/flac, LAME, mstorsjo/fdk-aac), builds its CLI from source
+# with the FP-deterministic scalar CFLAGS the pure-Go port targets, and drives
+# it out-of-process against the port. The build needs a C/C++ toolchain plus
+# autotools; the heavy upstream build is cached keyed on the run.sh contents.
+
+on:
+  workflow_call:
+    inputs:
+      codec:
+        description: Codec key under libraries/ (opus|flac|mp3|aac)
+        required: true
+        type: string
+      cache_paths:
+        description: Newline-separated upstream build dir(s) to cache
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  parity:
+    runs-on: ubuntu-latest
+    env:
+      # The parity CFLAGS use clang-specific flags (-fno-vectorize,
+      # -fno-slp-vectorize); build the C reference and cgo with clang.
+      CC: clang
+      CXX: clang++
+      MISE_EXPERIMENTAL: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install reference-codec build toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            clang autoconf automake libtool libtool-bin autopoint gettext \
+            pkg-config make cmake nasm git curl ca-certificates
+
+      - name: Cache upstream reference build
+        uses: actions/cache@v4
+        with:
+          path: ${{ inputs.cache_paths }}
+          key: blackbox-${{ inputs.codec }}-${{ runner.os }}-${{ hashFiles(format('libraries/{0}/internal/parity_tests/blackbox/run.sh', inputs.codec)) }}
+
+      - uses: jdx/mise-action@v2
+
+      - name: Trust mise config
+        run: mise trust --all
+
+      - name: Black-box parity — ${{ inputs.codec }}
+        run: mise run //libraries/${{ inputs.codec }}:parity:blackbox

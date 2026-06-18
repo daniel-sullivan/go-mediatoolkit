@@ -1,0 +1,73 @@
+# AAC codec library — mise tasks
+# The C reference (libfdk-aac) is vendored under this directory and
+# compiled inline via cgo by the parity_tests/ oracle packages once the
+# 1:1 port lands. No system install or external build is needed for
+# normal use.
+#
+# Task names below are bare (e.g. `test`, `parity`). Under monorepo mode
+# (`experimental_monorepo_root = true` in the root mise.toml +
+# MISE_EXPERIMENTAL=1), mise auto-prefixes these with the path to this
+# config so they appear as `//libraries/aac:test` etc.
+#
+# Build tags
+# ----------
+#   aacfdk    — REQUIRED for any AAC code path. FDK-AAC is the only AAC
+#               engine, so the vendored C, the cgo backends, the 1:1 Go
+#               port (internal/nativeaac), and the parity slices are all
+#               fenced behind this tag. A default `go build ./...` links
+#               zero FDK-AAC.
+#   aac_strict — integer-parity assertion mode. FDK-AAC is FIXED-POINT
+#               (int32 Q-format) for both decode and the ported encoder
+#               kernels, so parity is EXACT integer equality (and a
+#               byte-identical bitstream on encode) — there is no FP/FMA
+#               path to make deterministic. aac_strict therefore does NOT
+#               switch arithmetic; it flips nativeaac.StrictMode so the
+#               strict-gated integer-parity assertions run instead of
+#               t.Skip().
+#
+# Parity-test CGO flags — the in-test C oracle is built with
+# `-ffp-contract=off -fno-vectorize -fno-slp-vectorize -fno-unroll-loops`.
+# For these integer kernels that flag set is belt-and-suspenders (the
+# fixed-point arithmetic is bit-identical regardless), kept only to mirror
+# the opus/flac oracle convention. Go's cgo flag-security allowlist rejects
+# these in-source, so they are set via CGO_CFLAGS env here (with
+# CGO_CFLAGS_ALLOW=".*"). Each task repeats the env block so it is inherited
+# when invoked via `mise run` from inside libraries/aac/.
+[tasks."test"]
+description = "Run all AAC package tests (aac_strict integer-parity mode). The aacfdk tag selects the cgo libfdk-aac oracle so the parity slices actually compile + assert exact integer equality."
+env = { CGO_CFLAGS = "-O2 -ffp-contract=off -fno-vectorize -fno-slp-vectorize -fno-unroll-loops", CGO_CFLAGS_ALLOW = ".*" }
+run = "go test -tags='aac_strict aacfdk' -count=1 ./..."
+
+[tasks."parity"]
+description = "Run the AAC parity suite (Go port vs vendored C reference via cgo). The aacfdk tag is REQUIRED: every parity_tests/ slice is fenced behind `cgo && aacfdk`, and aac_strict flips nativeaac.StrictMode so the strict-gated assertions run instead of t.Skip()."
+env = { CGO_CFLAGS = "-O2 -ffp-contract=off -fno-vectorize -fno-slp-vectorize -fno-unroll-loops", CGO_CFLAGS_ALLOW = ".*" }
+run = "go test -tags='aac_strict aacfdk' -count=1 ./internal/parity_tests/..."
+
+[tasks."parity:blackbox"]
+description = "Run the black-box parity suite against an UNMODIFIED upstream mstorsjo/fdk-aac v2.0.3 build. Clones + builds libfdk-aac, then compiles two tiny out-of-tree CLIs (aac-rawenc: raw-transmux AAC-LC CBR encode; aac-dec: TT_MP4_RAW decode, limiter off) against the pristine static lib and drives them out-of-process vs the pure-Go nativeaac port: BYTE-IDENTICAL raw AUs on encode, EXACT-integer int16 PCM on decode (fixed-point — no FP/ULP tolerance). The shipped aac-enc is unusable (hardcoded ADTS shifts the CBR bit budget). CGO_CFLAGS_ALLOW='.*' since the in-test toolchain mirrors the integer-kernel oracle flags (belt-and-suspenders)."
+env = { CGO_CFLAGS_ALLOW = ".*" }
+run = "./internal/parity_tests/blackbox/run.sh"
+
+# Benchmarks — native nativeaac vs the vendored C reference (cgo). Both bench
+# tasks compile the C oracle with the same scalar flags as the parity oracle
+# (`-ffp-contract=off -fno-vectorize -fno-slp-vectorize -fno-unroll-loops`, no
+# intrinsics) so the C column is an apples-to-apples scalar reference, NOT a
+# production build. Go's cgo flag-security allowlist rejects these in-source, so
+# they are set via CGO_CFLAGS here (with CGO_CFLAGS_ALLOW=".*"). `bench` runs the
+# default Go build; `bench:strict` runs the aac_strict build (assertions on).
+# The fixed-point kernels are exact-integer in both, so these differ only in
+# whether the parity assertions are active, not in arithmetic.
+[tasks."bench"]
+description = "Run Go vs C comparison benchmarks (default build; fixed-point kernels are exact-integer)"
+env = { CGO_CFLAGS = "-O2 -ffp-contract=off -fno-vectorize -fno-slp-vectorize -fno-unroll-loops", CGO_CFLAGS_ALLOW = ".*" }
+run = "go test -bench=. -benchtime=2s -benchmem -run=^$ ./internal/parity_tests/benchcmp/"
+
+[tasks."bench:strict"]
+description = "Benchmarks under the aac_strict build (integer-parity assertions on) for apples-to-apples vs the C oracle"
+env = { CGO_CFLAGS = "-O2 -ffp-contract=off -fno-vectorize -fno-slp-vectorize -fno-unroll-loops", CGO_CFLAGS_ALLOW = ".*" }
+run = "go test -tags=aac_strict -bench=. -benchtime=2s -benchmem -run=^$ ./internal/parity_tests/benchcmp/"
+
+[tasks."bench:production"]
+description = "Benchmarks against a production-style C reference (default -O2, no scalar-oracle flags) — Go default build. Shows a more realistic C number."
+env = { CGO_CFLAGS = "-O2", CGO_CFLAGS_ALLOW = ".*" }
+run = "go test -bench=. -benchtime=2s -benchmem -run=^$ ./internal/parity_tests/benchcmp/"

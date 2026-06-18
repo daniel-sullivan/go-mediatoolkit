@@ -1,0 +1,19 @@
+name: aac blackbox
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  aac:
+    uses: ./.github/workflows/blackbox-reusable.yml
+    with:
+      codec: aac
+      cache_paths: |
+        /tmp/fdk-aac-upstream
+        /tmp/fdk-aac-blackbox-cli
