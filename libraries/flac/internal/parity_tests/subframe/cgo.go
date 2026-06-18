@@ -21,6 +21,13 @@ package subframe
 
 extern FLAC__bool fparity_sf_read_cb(FLAC__byte buf[], size_t *bytes, void *cd);
 
+// fparity_sf_init wraps FLAC__bitreader_init so the integer handle id
+// crosses the cgo boundary as a uintptr_t (not unsafe.Pointer of an
+// integer, which trips -d=checkptr). The C side casts it to void*.
+static inline FLAC__bool fparity_sf_init(FLAC__BitReader *br, FLAC__BitReaderReadCallback rcb, uintptr_t id) {
+	return FLAC__bitreader_init(br, rcb, (void *)id);
+}
+
 extern size_t fparity_encode_residual(uint8_t *out, size_t out_cap,
                                        uint32_t predictor_order,
                                        uint32_t partition_order,
@@ -230,7 +237,7 @@ func CgoDecodeConstant(body []byte, bps uint32) (int64, int) {
 		C.FLAC__bitreader_free(br)
 		C.FLAC__bitreader_delete(br)
 	}()
-	C.FLAC__bitreader_init(br, (C.FLAC__BitReaderReadCallback)(C.fparity_sf_read_cb), unsafe.Pointer(uintptr(id)))
+	C.fparity_sf_init(br, (C.FLAC__BitReaderReadCallback)(C.fparity_sf_read_cb), C.uintptr_t(id))
 
 	var v C.int64_t
 	st := C.fparity_decode_constant(br, C.uint32_t(bps), &v)
@@ -247,7 +254,7 @@ func CgoDecodeVerbatim32(body []byte, blocksize, bps uint32) ([]int32, int) {
 		C.FLAC__bitreader_free(br)
 		C.FLAC__bitreader_delete(br)
 	}()
-	C.FLAC__bitreader_init(br, (C.FLAC__BitReaderReadCallback)(C.fparity_sf_read_cb), unsafe.Pointer(uintptr(id)))
+	C.fparity_sf_init(br, (C.FLAC__BitReaderReadCallback)(C.fparity_sf_read_cb), C.uintptr_t(id))
 
 	out := make([]int32, blocksize)
 	st := C.fparity_decode_verbatim_int32(br, C.uint32_t(blocksize), C.uint32_t(bps),
@@ -265,7 +272,7 @@ func CgoDecodeResidual(body []byte, predictorOrder, partitionOrder, blocksize ui
 		C.FLAC__bitreader_free(br)
 		C.FLAC__bitreader_delete(br)
 	}()
-	C.FLAC__bitreader_init(br, (C.FLAC__BitReaderReadCallback)(C.fparity_sf_read_cb), unsafe.Pointer(uintptr(id)))
+	C.fparity_sf_init(br, (C.FLAC__BitReaderReadCallback)(C.fparity_sf_read_cb), C.uintptr_t(id))
 
 	residual = make([]int32, blocksize-predictorOrder)
 	partitions := uint32(1) << partitionOrder

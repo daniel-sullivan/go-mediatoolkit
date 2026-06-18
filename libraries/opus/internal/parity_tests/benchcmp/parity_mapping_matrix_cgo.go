@@ -122,7 +122,7 @@ func cMappingMatrixExtract(buf []byte) (rows, cols, gain int, cells []int16) {
 	dataPtr := C.c_mm_get_data(ptr)
 	cells = make([]int16, n)
 	for i := 0; i < n; i++ {
-		cells[i] = int16(*(*C.opus_int16)(unsafe.Pointer(uintptr(unsafe.Pointer(dataPtr)) + uintptr(i)*unsafe.Sizeof(C.opus_int16(0)))))
+		cells[i] = int16(*(*C.opus_int16)(unsafe.Add(unsafe.Pointer(dataPtr), uintptr(i)*unsafe.Sizeof(C.opus_int16(0)))))
 	}
 	return
 }

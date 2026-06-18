@@ -7,10 +7,12 @@ package flac
 #include <FLAC/format.h>
 #include <FLAC/metadata.h>
 #include <stdlib.h>
+#include <stdint.h>
 
 // flacGoInitStreamEncoder + state-string helpers are defined in
-// flac_cgo_trampolines.c.
-extern FLAC__StreamEncoderInitStatus flacGoInitStreamEncoder(FLAC__StreamEncoder *enc, void *client_data);
+// flac_cgo_trampolines.c. client_data is a cgo.Handle passed as an
+// integer (uintptr_t), not a Go pointer — see the trampoline comment.
+extern FLAC__StreamEncoderInitStatus flacGoInitStreamEncoder(FLAC__StreamEncoder *enc, uintptr_t client_data);
 extern const char *flacGoEncoderStateString  (FLAC__StreamEncoderState  s);
 extern const char *flacGoEncoderInitStatusStr(FLAC__StreamEncoderInitStatus s);
 */
@@ -85,7 +87,7 @@ func newEncoder(w io.Writer, info StreamInfo, cfg encoderConfig) (Encoder, error
 		e.metaArrPtr = unsafe.Pointer(metaArr)
 	}
 
-	st := C.flacGoInitStreamEncoder(enc, unsafe.Pointer(uintptr(e.handle)))
+	st := C.flacGoInitStreamEncoder(enc, C.uintptr_t(e.handle))
 	if st != C.FLAC__STREAM_ENCODER_INIT_STATUS_OK {
 		statusStr := C.GoString(C.flacGoEncoderInitStatusStr(st))
 		e.handle.Delete()

@@ -23,6 +23,14 @@ package bitreader
 // client_data and feeds bytes from a Go-owned []byte slab. The
 // callback signature has to match FLAC__BitReaderReadCallback exactly.
 extern FLAC__bool fparity_br_read_cb(FLAC__byte buf[], size_t *bytes, void *cd);
+
+// fparity_br_init wraps FLAC__bitreader_init so the integer handle id is
+// passed across the cgo boundary as a uintptr_t (not unsafe.Pointer of an
+// integer, which trips -d=checkptr). The C side casts it to the void*
+// client_data libFLAC expects; the read callback recovers the integer.
+static inline FLAC__bool fparity_br_init(FLAC__BitReader *br, FLAC__BitReaderReadCallback rcb, uintptr_t id) {
+	return FLAC__bitreader_init(br, rcb, (void *)id);
+}
 */
 import "C"
 
@@ -55,7 +63,7 @@ func newCgoBitReader(source []byte) *cgoBitReader {
 	}
 	nextCgoID++
 	cgoBitReaders[br.id] = br
-	C.FLAC__bitreader_init(br.br, (C.FLAC__BitReaderReadCallback)(C.fparity_br_read_cb), unsafe.Pointer(uintptr(br.id)))
+	C.fparity_br_init(br.br, (C.FLAC__BitReaderReadCallback)(C.fparity_br_read_cb), C.uintptr_t(br.id))
 	return br
 }
 

@@ -35,6 +35,14 @@ typedef struct {
 } fparity_fh_result_t;
 
 extern FLAC__bool fparity_fh_read_cb(FLAC__byte buf[], size_t *bytes, void *cd);
+
+// fparity_fh_init wraps FLAC__bitreader_init so the integer handle id
+// crosses the cgo boundary as a uintptr_t (not unsafe.Pointer of an
+// integer, which trips -d=checkptr). The C side casts it to void*.
+static inline FLAC__bool fparity_fh_init(FLAC__BitReader *br, FLAC__BitReaderReadCallback rcb, uintptr_t id) {
+	return FLAC__bitreader_init(br, rcb, (void *)id);
+}
+
 extern void fparity_read_frame_header(FLAC__BitReader *br,
                                        uint8_t hdr0, uint8_t hdr1,
                                        int has_streaminfo,
@@ -120,7 +128,7 @@ func CgoReadFrameHeader(body []byte, hdr0, hdr1 byte, hasStreamInfo bool, siSR, 
 		C.FLAC__bitreader_free(br)
 		C.FLAC__bitreader_delete(br)
 	}()
-	C.FLAC__bitreader_init(br, (C.FLAC__BitReaderReadCallback)(C.fparity_fh_read_cb), unsafe.Pointer(uintptr(id)))
+	C.fparity_fh_init(br, (C.FLAC__BitReaderReadCallback)(C.fparity_fh_read_cb), C.uintptr_t(id))
 
 	hsi := C.int(0)
 	if hasStreamInfo {

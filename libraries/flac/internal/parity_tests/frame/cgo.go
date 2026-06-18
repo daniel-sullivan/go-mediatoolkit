@@ -44,6 +44,13 @@ typedef struct {
 
 extern FLAC__bool fparity_frame_read_cb(FLAC__byte buf[], size_t *bytes, void *cd);
 
+// fparity_frame_init wraps FLAC__bitreader_init so the integer handle id
+// crosses the cgo boundary as a uintptr_t (not unsafe.Pointer of an
+// integer, which trips -d=checkptr). The C side casts it to void*.
+static inline FLAC__bool fparity_frame_init(FLAC__BitReader *br, FLAC__BitReaderReadCallback rcb, uintptr_t id) {
+	return FLAC__bitreader_init(br, rcb, (void *)id);
+}
+
 extern size_t fparity_assemble_frame(uint8_t *out, size_t out_cap,
                                      uint32_t blocksize, uint32_t sample_rate,
                                      uint32_t channels, uint32_t bits_per_sample,
@@ -230,7 +237,7 @@ func CgoDecodeFrame(body []byte, siSR, siBPS, siMinBS, siMaxBS uint32) (
 		C.FLAC__bitreader_free(br)
 		C.FLAC__bitreader_delete(br)
 	}()
-	C.FLAC__bitreader_init(br, (C.FLAC__BitReaderReadCallback)(C.fparity_frame_read_cb), unsafe.Pointer(uintptr(id)))
+	C.fparity_frame_init(br, (C.FLAC__BitReaderReadCallback)(C.fparity_frame_read_cb), C.uintptr_t(id))
 
 	out := make([]int32, MaxBlocksize*MaxChannels)
 	var cBS, cCh, cBps, cCa C.uint32_t

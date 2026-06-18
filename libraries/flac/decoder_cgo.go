@@ -7,6 +7,7 @@ package flac
 #include <FLAC/format.h>
 #include <FLAC/metadata.h>
 #include <stdlib.h>
+#include <stdint.h>
 
 // flacGoInitStream / flacGoSampleAt / flacGoStreamInfo /
 // flacGoFrameBlocksize / flacGoFrameChannels are defined in
@@ -15,7 +16,9 @@ package flac
 // is not available to this preamble (cgo processes preambles before
 // generating it), so the trampoline lives in a separate translation
 // unit.
-extern FLAC__StreamDecoderInitStatus flacGoInitStream(FLAC__StreamDecoder *dec, void *client_data);
+// client_data is a cgo.Handle passed as an integer (uintptr_t), not a Go
+// pointer — see the flac_cgo_trampolines.c comment.
+extern FLAC__StreamDecoderInitStatus flacGoInitStream(FLAC__StreamDecoder *dec, uintptr_t client_data);
 extern FLAC__int32                   flacGoSampleAt(const FLAC__int32 * const buffer[], int ch, int i);
 extern const FLAC__StreamMetadata_StreamInfo *flacGoStreamInfo(const FLAC__StreamMetadata *m);
 extern uint32_t                      flacGoFrameBlocksize(const FLAC__Frame *f);
@@ -85,7 +88,7 @@ func newDecoder(r io.Reader, cfg decoderConfig) (Decoder, error) {
 	// in addition to the default STREAMINFO subscription.
 	C.FLAC__stream_decoder_set_metadata_respond(dec, C.FLAC__METADATA_TYPE_VORBIS_COMMENT)
 
-	st := C.flacGoInitStream(dec, unsafe.Pointer(uintptr(d.handle)))
+	st := C.flacGoInitStream(dec, C.uintptr_t(d.handle))
 	if st != C.FLAC__STREAM_DECODER_INIT_STATUS_OK {
 		d.handle.Delete()
 		C.FLAC__stream_decoder_delete(dec)

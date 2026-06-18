@@ -25,6 +25,13 @@ package channel
 
 extern FLAC__bool fparity_ch_read_cb(FLAC__byte buf[], size_t *bytes, void *cd);
 
+// fparity_ch_init wraps FLAC__bitreader_init so the integer handle id
+// crosses the cgo boundary as a uintptr_t (not unsafe.Pointer of an
+// integer, which trips -d=checkptr). The C side casts it to void*.
+static inline FLAC__bool fparity_ch_init(FLAC__BitReader *br, FLAC__BitReaderReadCallback rcb, uintptr_t id) {
+	return FLAC__bitreader_init(br, rcb, (void *)id);
+}
+
 extern void fparity_undo_channel_coding(int assignment,
                                         int32_t *output0,
                                         int32_t *output1,
@@ -153,7 +160,7 @@ func CgoVerifyFooter(body []byte, warmup0, warmup1 byte, payloadLen int) (match 
 		C.FLAC__bitreader_free(br)
 		C.FLAC__bitreader_delete(br)
 	}()
-	C.FLAC__bitreader_init(br, (C.FLAC__BitReaderReadCallback)(C.fparity_ch_read_cb), unsafe.Pointer(uintptr(id)))
+	C.fparity_ch_init(br, (C.FLAC__BitReaderReadCallback)(C.fparity_ch_read_cb), C.uintptr_t(id))
 
 	var m C.int
 	st := C.fparity_verify_footer(br, C.uint8_t(warmup0), C.uint8_t(warmup1), C.size_t(payloadLen), &m)

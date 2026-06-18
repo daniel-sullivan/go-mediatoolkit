@@ -24,6 +24,13 @@ package metadata
 
 extern FLAC__bool fparity_md_read_cb(FLAC__byte buf[], size_t *bytes, void *cd);
 
+// fparity_md_init wraps FLAC__bitreader_init so the integer handle id
+// crosses the cgo boundary as a uintptr_t (not unsafe.Pointer of an
+// integer, which trips -d=checkptr). The C side casts it to void*.
+static inline FLAC__bool fparity_md_init(FLAC__BitReader *br, FLAC__BitReaderReadCallback rcb, uintptr_t id) {
+	return FLAC__bitreader_init(br, rcb, (void *)id);
+}
+
 extern size_t fparity_encode_streaminfo(uint8_t *out, size_t out_cap,
                                         int is_last, uint32_t type,
                                         uint32_t min_blocksize, uint32_t max_blocksize,
@@ -152,7 +159,7 @@ func CgoFindMetadata(body []byte, cached bool, lookahead byte) (status int,
 		C.FLAC__bitreader_free(br)
 		C.FLAC__bitreader_delete(br)
 	}()
-	C.FLAC__bitreader_init(br, (C.FLAC__BitReaderReadCallback)(C.fparity_md_read_cb), unsafe.Pointer(uintptr(id)))
+	C.fparity_md_init(br, (C.FLAC__BitReaderReadCallback)(C.fparity_md_read_cb), C.uintptr_t(id))
 
 	cCached := C.int(0)
 	if cached {
@@ -198,7 +205,7 @@ func CgoReadMetadata(body []byte) (info CgoStreamInfo, status int, consumed uint
 		C.FLAC__bitreader_free(br)
 		C.FLAC__bitreader_delete(br)
 	}()
-	C.FLAC__bitreader_init(br, (C.FLAC__BitReaderReadCallback)(C.fparity_md_read_cb), unsafe.Pointer(uintptr(id)))
+	C.fparity_md_init(br, (C.FLAC__BitReaderReadCallback)(C.fparity_md_read_cb), C.uintptr_t(id))
 
 	var (
 		isLast, hasSI, md5Zero     C.int

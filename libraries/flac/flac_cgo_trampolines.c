@@ -17,9 +17,15 @@
 #include <FLAC/stream_encoder.h>
 #include <FLAC/format.h>
 #include <FLAC/metadata.h>
+#include <stdint.h>
 #include "_cgo_export.h"
 
-FLAC__StreamDecoderInitStatus flacGoInitStream(FLAC__StreamDecoder *dec, void *client_data) {
+/* The client_data is a runtime/cgo.Handle — an opaque integer token, not
+ * a real Go pointer. It is passed in as a uintptr_t (checkptr-safe; Go
+ * may not convert a Handle to unsafe.Pointer) and cast to void* here on
+ * the C side, which is legal. libFLAC hands the same void* back to the
+ * callbacks, where Go recovers it via cgo.Handle(uintptr(clientData)). */
+FLAC__StreamDecoderInitStatus flacGoInitStream(FLAC__StreamDecoder *dec, uintptr_t client_data) {
     return FLAC__stream_decoder_init_stream(
         dec,
         (FLAC__StreamDecoderReadCallback)     flacGoReadCallback,
@@ -30,7 +36,7 @@ FLAC__StreamDecoderInitStatus flacGoInitStream(FLAC__StreamDecoder *dec, void *c
         (FLAC__StreamDecoderWriteCallback)    flacGoWriteCallback,
         (FLAC__StreamDecoderMetadataCallback) flacGoMetadataCallback,
         (FLAC__StreamDecoderErrorCallback)    flacGoErrorCallback,
-        client_data);
+        (void *)client_data);
 }
 
 FLAC__int32 flacGoSampleAt(const FLAC__int32 * const buffer[], int ch, int i) {
@@ -72,12 +78,12 @@ const char *flacGoVorbisCommentBytes(const FLAC__StreamMetadata_VorbisComment *v
     return (const char*)vc->comments[i].entry;
 }
 
-FLAC__StreamEncoderInitStatus flacGoInitStreamEncoder(FLAC__StreamEncoder *enc, void *client_data) {
+FLAC__StreamEncoderInitStatus flacGoInitStreamEncoder(FLAC__StreamEncoder *enc, uintptr_t client_data) {
     return FLAC__stream_encoder_init_stream(
         enc,
         (FLAC__StreamEncoderWriteCallback)    flacGoEncWriteCallback,
         NULL,  /* seek_callback     — non-seekable stream output */
         NULL,  /* tell_callback     */
         NULL,  /* metadata_callback */
-        client_data);
+        (void *)client_data);
 }
