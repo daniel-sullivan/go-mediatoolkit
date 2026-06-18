@@ -14,16 +14,34 @@ import (
 type cgoEncoder struct {
 	state    C.ogg_stream_state
 	serialNo int32
+	closed   bool
 }
 
 // NewCgoEncoder creates an Encoder that uses the C libogg implementation.
 // Only available when built with Cgo enabled.
+//
+// The returned Encoder owns libogg-allocated C memory. Call Close when
+// finished to release it; otherwise the stream buffers leak until process
+// exit.
 func NewCgoEncoder(serialNo int32) (Encoder, error) {
 	e := &cgoEncoder{serialNo: serialNo}
 	if C.ogg_stream_init(&e.state, C.int(serialNo)) != 0 {
 		return nil, ErrInternalError
 	}
 	return e, nil
+}
+
+// Close releases the libogg C state backing this Encoder. It is
+// idempotent; after Close the Encoder must not be used again. The C
+// struct itself is a Go-allocated field, so only ogg_stream_clear is
+// required (no C.free).
+func (e *cgoEncoder) Close() error {
+	if e.closed {
+		return nil
+	}
+	e.closed = true
+	C.ogg_stream_clear(&e.state)
+	return nil
 }
 
 func (e *cgoEncoder) PacketIn(pkt *Packet) error {

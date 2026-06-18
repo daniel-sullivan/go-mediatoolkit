@@ -10,15 +10,32 @@ import "C"
 import "unsafe"
 
 type cgoSync struct {
-	state C.ogg_sync_state
+	state  C.ogg_sync_state
+	closed bool
 }
 
 // NewCgoSync creates a Sync that uses the C libogg implementation.
 // Only available when built with Cgo enabled.
+//
+// The returned Sync owns libogg-allocated C memory. Call Close (via the
+// CgoSync type assertion) when finished to release it; otherwise the
+// internal buffer leaks until process exit.
 func NewCgoSync() Sync {
 	s := &cgoSync{}
 	C.ogg_sync_init(&s.state)
 	return s
+}
+
+// Close releases the libogg C state backing this Sync. It is idempotent;
+// after Close the Sync must not be used again. The C struct itself is a
+// Go-allocated field, so only ogg_sync_clear is required (no C.free).
+func (s *cgoSync) Close() error {
+	if s.closed {
+		return nil
+	}
+	s.closed = true
+	C.ogg_sync_clear(&s.state)
+	return nil
 }
 
 func (s *cgoSync) Write(data []byte) (int, error) {

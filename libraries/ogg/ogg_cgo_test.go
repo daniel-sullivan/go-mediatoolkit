@@ -4,8 +4,20 @@ package ogg
 
 import (
 	"bytes"
+	"io"
 	"testing"
 )
+
+// closeOnCleanup releases any libogg C state owned by v (cgo Sync /
+// Decoder / Encoder implement io.Closer) when the test finishes, so the
+// ASan LeakSanitizer pass at process exit sees no leak. Pure-Go
+// implementations don't implement io.Closer and are a no-op here.
+func closeOnCleanup(t testing.TB, v any) {
+	t.Helper()
+	if c, ok := v.(io.Closer); ok {
+		t.Cleanup(func() { c.Close() })
+	}
+}
 
 // ── Cgo round-trip ──────────────────────────────────────────────────
 
@@ -15,6 +27,9 @@ func TestCgoRoundTrip(t *testing.T) {
 	enc, _ := NewCgoEncoder(serialNo)
 	sync := NewCgoSync()
 	dec, _ := NewCgoDecoder(serialNo)
+	closeOnCleanup(t, enc)
+	closeOnCleanup(t, sync)
+	closeOnCleanup(t, dec)
 
 	packets := []Packet{
 		{Data: []byte("hello"), BOS: true, GranulePos: 0, PacketNo: 0},
@@ -40,6 +55,9 @@ func TestCgoLargePacket(t *testing.T) {
 	enc, _ := NewCgoEncoder(serialNo)
 	sync := NewCgoSync()
 	dec, _ := NewCgoDecoder(serialNo)
+	closeOnCleanup(t, enc)
+	closeOnCleanup(t, sync)
+	closeOnCleanup(t, dec)
 
 	largeData := make([]byte, 70000)
 	for i := range largeData {
@@ -73,6 +91,7 @@ func TestCgoSyncRecovery(t *testing.T) {
 	raw = append(raw, page.Body...)
 
 	sync := NewCgoSync()
+	closeOnCleanup(t, sync)
 	sync.Write(raw)
 
 	_, ret, _ := sync.PageOut()
@@ -86,6 +105,7 @@ func TestCgoSyncRecovery(t *testing.T) {
 	}
 
 	dec, _ := NewCgoDecoder(serialNo)
+	closeOnCleanup(t, dec)
 	dec.PageIn(&gotPage)
 	gotPkt, ret, _ := dec.PacketOut()
 	if ret != 1 {
@@ -109,6 +129,7 @@ func TestSimilarity_PagesBytesIdentical(t *testing.T) {
 
 	cgoEnc, _ := NewCgoEncoder(serialNo)
 	nativeEnc, _ := NewEncoder(serialNo)
+	closeOnCleanup(t, cgoEnc)
 
 	cgoRaw := encodeToRaw(t, cgoEnc, packets)
 	nativeRaw := encodeToRaw(t, nativeEnc, packets)
@@ -144,6 +165,7 @@ func TestSimilarity_LargePacketPages(t *testing.T) {
 
 	cgoEnc, _ := NewCgoEncoder(serialNo)
 	nativeEnc, _ := NewEncoder(serialNo)
+	closeOnCleanup(t, cgoEnc)
 
 	cgoRaw := encodeToRaw(t, cgoEnc, packets)
 	nativeRaw := encodeToRaw(t, nativeEnc, packets)
@@ -164,6 +186,7 @@ func TestSimilarity_PageHeaderFields(t *testing.T) {
 
 	cgoEnc, _ := NewCgoEncoder(serialNo)
 	nativeEnc, _ := NewEncoder(serialNo)
+	closeOnCleanup(t, cgoEnc)
 
 	cgoPages := encodeToPages(t, cgoEnc, packets)
 	nativePages := encodeToPages(t, nativeEnc, packets)
@@ -217,11 +240,13 @@ func TestSimilarity_DecodedPackets(t *testing.T) {
 
 	cgoSync := NewCgoSync()
 	nativeSync := NewSync()
+	closeOnCleanup(t, cgoSync)
 	cgoSync.Write(raw)
 	nativeSync.Write(raw)
 
 	cgoDec, _ := NewCgoDecoder(serialNo)
 	nativeDec, _ := NewDecoder(serialNo)
+	closeOnCleanup(t, cgoDec)
 
 	for {
 		page, ret, _ := cgoSync.PageOut()
@@ -282,6 +307,7 @@ func TestCrossCompat_CgoEncode_NativeDecode(t *testing.T) {
 	cgoEnc, _ := NewCgoEncoder(serialNo)
 	nativeSync := NewSync()
 	nativeDec, _ := NewDecoder(serialNo)
+	closeOnCleanup(t, cgoEnc)
 
 	packets := []Packet{
 		{Data: []byte("cross-compat test"), BOS: true, GranulePos: 0, PacketNo: 0},
@@ -305,6 +331,8 @@ func TestCrossCompat_NativeEncode_CgoDecode(t *testing.T) {
 	nativeEnc, _ := NewEncoder(serialNo)
 	cgoSync := NewCgoSync()
 	cgoDec, _ := NewCgoDecoder(serialNo)
+	closeOnCleanup(t, cgoSync)
+	closeOnCleanup(t, cgoDec)
 
 	packets := []Packet{
 		{Data: []byte("cross-compat test"), BOS: true, GranulePos: 0, PacketNo: 0},
@@ -356,6 +384,7 @@ func benchEncodeCgo(b *testing.B, pktSize int) {
 				break
 			}
 		}
+		enc.(io.Closer).Close()
 	}
 }
 
@@ -399,6 +428,7 @@ func benchSyncCgo(b *testing.B, pktSize int) {
 				break
 			}
 		}
+		sync.(io.Closer).Close()
 	}
 }
 
@@ -455,5 +485,9 @@ func BenchmarkRoundTrip4K_Cgo(b *testing.B) {
 				break
 			}
 		}
+
+		enc.(io.Closer).Close()
+		sync.(io.Closer).Close()
+		dec.(io.Closer).Close()
 	}
 }

@@ -15,16 +15,34 @@ import (
 type cgoDecoder struct {
 	state    C.ogg_stream_state
 	serialNo int32
+	closed   bool
 }
 
 // NewCgoDecoder creates a Decoder that uses the C libogg implementation.
 // Only available when built with Cgo enabled.
+//
+// The returned Decoder owns libogg-allocated C memory. Call Close when
+// finished to release it; otherwise the stream buffers leak until process
+// exit.
 func NewCgoDecoder(serialNo int32) (Decoder, error) {
 	d := &cgoDecoder{serialNo: serialNo}
 	if C.ogg_stream_init(&d.state, C.int(serialNo)) != 0 {
 		return nil, ErrInternalError
 	}
 	return d, nil
+}
+
+// Close releases the libogg C state backing this Decoder. It is
+// idempotent; after Close the Decoder must not be used again. The C
+// struct itself is a Go-allocated field, so only ogg_stream_clear is
+// required (no C.free).
+func (d *cgoDecoder) Close() error {
+	if d.closed {
+		return nil
+	}
+	d.closed = true
+	C.ogg_stream_clear(&d.state)
+	return nil
 }
 
 func (d *cgoDecoder) PageIn(page *Page) error {
