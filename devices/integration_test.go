@@ -8,6 +8,14 @@
 // Run with:
 //
 //	go test -race -count=1 -tags=integration -p 1 ./devices/...
+//
+// devices.GetSystem returns a process-wide singleton (sync.Once): every
+// test in this package shares the same *System and the same underlying
+// platform watcher. A test must therefore never call sys.Close() — doing
+// so cancels the shared watcher's context for good, leaving every
+// subsequent test with a dead System that emits no hotplug events. The
+// singleton is owned by the test binary and is torn down implicitly when
+// the process exits.
 package devices_test
 
 import (
@@ -38,7 +46,7 @@ func TestIntegration_GetSystemReturnsAtLeastOneDevice(t *testing.T) {
 	sys, err := devices.GetSystem()
 	require.NoError(t, err)
 	require.NotNil(t, sys)
-	t.Cleanup(func() { _ = sys.Close() })
+	// Do not Close the shared singleton; see the package doc comment.
 
 	list := sys.List()
 	require.NotEmpty(t, list, "CI runner should have at least one virtual audio device configured")
@@ -56,7 +64,7 @@ func TestIntegration_SnapshotAtomicity(t *testing.T) {
 	sys, err := devices.GetSystem()
 	require.NoError(t, err)
 	require.NotNil(t, sys)
-	t.Cleanup(func() { _ = sys.Close() })
+	// Do not Close the shared singleton; see the package doc comment.
 
 	snap, sub := sys.Snapshot(func(devices.Event) {})
 	require.NotNil(t, sub)
@@ -78,7 +86,7 @@ func TestIntegration_SubscriptionCancelStopsDelivery(t *testing.T) {
 	sys, err := devices.GetSystem()
 	require.NoError(t, err)
 	require.NotNil(t, sys)
-	t.Cleanup(func() { _ = sys.Close() })
+	// Do not Close the shared singleton; see the package doc comment.
 
 	var received atomic.Int64
 	_, sub := sys.Snapshot(func(devices.Event) {
@@ -118,7 +126,7 @@ func TestIntegration_HotplugAddRemoveLinux(t *testing.T) {
 	sys, err := devices.GetSystem()
 	require.NoError(t, err)
 	require.NotNil(t, sys)
-	t.Cleanup(func() { _ = sys.Close() })
+	// Do not Close the shared singleton; see the package doc comment.
 
 	const sinkName = "hotplug_test"
 
