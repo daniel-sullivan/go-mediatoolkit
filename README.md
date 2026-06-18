@@ -2,6 +2,7 @@
 
 [![tests](https://github.com/daniel-sullivan/go-mediatoolkit/actions/workflows/tests.yml/badge.svg)](https://github.com/daniel-sullivan/go-mediatoolkit/actions/workflows/tests.yml)
 [![lint](https://github.com/daniel-sullivan/go-mediatoolkit/actions/workflows/lint.yml/badge.svg)](https://github.com/daniel-sullivan/go-mediatoolkit/actions/workflows/lint.yml)
+[![sanitizers](https://github.com/daniel-sullivan/go-mediatoolkit/actions/workflows/sanitizers.yml/badge.svg)](https://github.com/daniel-sullivan/go-mediatoolkit/actions/workflows/sanitizers.yml)
 [![opus blackbox](https://github.com/daniel-sullivan/go-mediatoolkit/actions/workflows/blackbox-opus.yml/badge.svg)](https://github.com/daniel-sullivan/go-mediatoolkit/actions/workflows/blackbox-opus.yml)
 [![flac blackbox](https://github.com/daniel-sullivan/go-mediatoolkit/actions/workflows/blackbox-flac.yml/badge.svg)](https://github.com/daniel-sullivan/go-mediatoolkit/actions/workflows/blackbox-flac.yml)
 [![mp3 blackbox](https://github.com/daniel-sullivan/go-mediatoolkit/actions/workflows/blackbox-mp3.yml/badge.svg)](https://github.com/daniel-sullivan/go-mediatoolkit/actions/workflows/blackbox-mp3.yml)

@@ -1,0 +1,48 @@
+name: sanitizers
+
+# AddressSanitizer pass over the cgo paths — the valgrind-equivalent for the
+# C reference backends and the unsafe.Pointer glue. Catches heap/stack buffer
+# overflows, use-after-free, and OOB in both the Go and the vendored C.
+#
+# The race detector + checkptr (illegal unsafe.Pointer arithmetic) run in
+# ci.yml via `go test -race`. MemorySanitizer (-msan) is intentionally not run:
+# it requires an MSan-instrumented libc to avoid false positives under cgo.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  asan:
+    runs-on: ubuntu-latest
+    env:
+      CC: clang
+      CXX: clang++
+      MISE_EXPERIMENTAL: "1"
+      # LeakSanitizer ships inside ASan and runs a leak check at process exit
+      # (default on Linux). Keep it on — it gates real C-binding leaks.
+      ASAN_OPTIONS: detect_leaks=1
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install C toolchain (clang ships the ASan + Leak runtime)
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends clang pkg-config
+
+      - uses: jdx/mise-action@v2
+
+      - name: Trust mise config
+        run: mise trust --all
+
+      # -asan (AddressSanitizer + LeakSanitizer) instruments the default cgo
+      # backends (Opus/FLAC/MP3/OGG decode, resample) and the unsafe.Pointer
+      # glue. Scoped to SHIPPING packages: the internal/parity_tests/** oracles
+      # are throwaway comparison harnesses that intentionally leak short-lived C
+      # allocations (and exercise vendored-C paths ASan poisons), which would be
+      # noise here — they are covered by -race/checkptr in ci.yml instead.
+      - name: go test -asan (shipping packages)
+        run: go test -asan -count=1 $(go list ./... | grep -v '/internal/parity_tests/')
