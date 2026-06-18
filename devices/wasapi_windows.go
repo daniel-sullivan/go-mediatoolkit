@@ -146,38 +146,55 @@ type propVariant struct {
 	wReserved1 uint16
 	wReserved2 uint16
 	wReserved3 uint16
-	// Union: lay out as two uintptrs + two uint32s so we can access
-	// BLOB.cbSize (uint32) followed by BLOB.pBlobData (pointer) as well
-	// as the single-pointer variants like LPWSTR.
-	val0 uintptr
-	val1 uintptr
+	// Union: the offset-8 and offset-16 slots are pointer-sized. The
+	// offset-8 slot (val0) is a real unsafe.Pointer so the single-pointer
+	// variants like LPWSTR satisfy the runtime's checkptr discipline —
+	// Windows writes a heap pointer here, and converting a *uintptr*
+	// stash back to a pointer (as the previous layout did) is exactly the
+	// checkptr violation we are fixing. The narrower numeric variants
+	// (UI4, BLOB.cbSize) live in the low 32 bits of this same slot and
+	// are read with read0u32 without ever round-tripping through a
+	// non-pointer uintptr field. The offset-16 slot (val1) holds
+	// BLOB.pBlobData (also a real pointer on 64-bit, where cbSize at
+	// offset 8 is followed by 4 bytes of padding).
+	val0 unsafe.Pointer
+	val1 unsafe.Pointer
+}
+
+// read0u32 reinterprets the low 32 bits of the offset-8 union slot as a
+// uint32. The slot is typed as unsafe.Pointer (for the LPWSTR pointer
+// variant), so the numeric variants read through &p.val0 rather than
+// converting the pointer value to an integer — keeping the read free of
+// any pointer<->uintptr round trip.
+func (p *propVariant) read0u32() uint32 {
+	return *(*uint32)(unsafe.Pointer(&p.val0))
 }
 
 // lpwstr returns the PROPVARIANT's value as a Go string, assuming it
 // holds a VT_LPWSTR. Callers must have checked vt.
 func (p *propVariant) lpwstr() string {
-	if p.val0 == 0 {
+	if p.val0 == nil {
 		return ""
 	}
-	return windows.UTF16PtrToString((*uint16)(unsafe.Pointer(p.val0)))
+	return windows.UTF16PtrToString((*uint16)(p.val0))
 }
 
 // blob returns the PROPVARIANT's BLOB payload as a byte slice view into
 // Windows-owned memory. Callers must not retain the slice past the
 // matching propVariantClear.
 func (p *propVariant) blob() []byte {
-	// BLOB { DWORD cbSize; BYTE *pBlobData; } starts at offset 8. With
-	// our uintptr layout val0 == cbSize (low 32 bits) and val1 ==
-	// pBlobData.
-	size := uint32(p.val0)
-	if size == 0 || p.val1 == 0 {
+	// BLOB { DWORD cbSize; BYTE *pBlobData; } starts at offset 8. cbSize
+	// occupies the low 32 bits of the offset-8 slot (val0) and pBlobData
+	// is the offset-16 slot (val1).
+	size := p.read0u32()
+	if size == 0 || p.val1 == nil {
 		return nil
 	}
-	return unsafe.Slice((*byte)(unsafe.Pointer(p.val1)), int(size))
+	return unsafe.Slice((*byte)(p.val1), int(size))
 }
 
 // ui4 returns the PROPVARIANT's VT_UI4 value.
-func (p *propVariant) ui4() uint32 { return uint32(p.val0) }
+func (p *propVariant) ui4() uint32 { return p.read0u32() }
 
 // propVariantClear calls ole32!PropVariantClear on a PROPVARIANT so
 // Windows can free any heap memory it owns.

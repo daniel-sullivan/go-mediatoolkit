@@ -147,7 +147,7 @@ func TestPropVariantLPWSTR(t *testing.T) {
 	require.NoError(t, err)
 
 	pv := propVariant{vt: vtLPWSTR}
-	pv.val0 = uintptr(unsafe.Pointer(&buf[0]))
+	pv.val0 = unsafe.Pointer(&buf[0])
 
 	assert.Equal(t, uint16(vtLPWSTR), pv.vt)
 	assert.Equal(t, "Speakers (Realtek)", pv.lpwstr())
@@ -158,9 +158,10 @@ func TestPropVariantLPWSTR(t *testing.T) {
 func TestPropVariantBlob(t *testing.T) {
 	payload := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
 	pv := propVariant{vt: vtBlob}
-	// BLOB: cbSize (uint32) in val0, pBlobData (pointer) in val1.
-	pv.val0 = uintptr(len(payload))
-	pv.val1 = uintptr(unsafe.Pointer(&payload[0]))
+	// BLOB: cbSize (uint32) in the low 32 bits of val0, pBlobData
+	// (pointer) in val1.
+	*(*uint32)(unsafe.Pointer(&pv.val0)) = uint32(len(payload))
+	pv.val1 = unsafe.Pointer(&payload[0])
 
 	got := pv.blob()
 	require.Len(t, got, len(payload))
@@ -170,7 +171,7 @@ func TestPropVariantBlob(t *testing.T) {
 // TestPropVariantUI4 validates the VT_UI4 extractor.
 func TestPropVariantUI4(t *testing.T) {
 	pv := propVariant{vt: vtUI4}
-	pv.val0 = 0xCAFEBABE
+	*(*uint32)(unsafe.Pointer(&pv.val0)) = 0xCAFEBABE
 	assert.Equal(t, uint32(0xCAFEBABE), pv.ui4())
 }
 
