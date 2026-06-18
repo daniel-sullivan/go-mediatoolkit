@@ -38,6 +38,16 @@
 #include "src/libFLAC/memory.c"
 #include "src/libFLAC/stream_encoder_framing.c"
 
+/* On Windows (incl. mingw) libFLAC's compat.h redirects flac_fprintf/
+ * flac_fopen to fprintf_utf8/fopen_utf8 (lpc.c references flac_fprintf
+ * in its debug path), which live in share/win_utf8_io.c. That TU is not
+ * otherwise compiled into this parity binary, so pull it in here to
+ * satisfy the link. No-op on non-Windows, where compat.h maps the
+ * flac_* macros straight to the stdio functions. */
+#ifdef _WIN32
+#include "src/share/win_utf8_io/win_utf8_io.c"
+#endif
+
 #include "_cgo_export.h"
 #include <stdint.h>
 #include <stdlib.h>
@@ -124,8 +134,14 @@ size_t fparity_assemble_frame(uint8_t *out, size_t out_cap,
             contents.parameters = (uint32_t *)d->rice_params;
             /* add_residual_partitioned_rice_ reads raw_bits[i] for EVERY
              * partition to choose escape-vs-rice; a NULL here segfaults. We
-             * never escape, so supply a zeroed array sized to the partitions. */
-            uint32_t f_raw_bits[1u << FLAC__ENTROPY_CODING_METHOD_PARTITIONED_RICE_ORDER_LEN] = {0};
+             * never escape, so supply a zeroed array sized to the partitions.
+             * FLAC__ENTROPY_CODING_METHOD_PARTITIONED_RICE_ORDER_LEN is an
+             * extern const (== 4), not a macro, so it is not a constant
+             * expression in C: sizing an array with it yields a VLA, and GCC
+             * rejects an initializer on a VLA. Use the literal 1u << 4 so the
+             * array is fixed-size and memset it instead of an initializer. */
+            uint32_t f_raw_bits[1u << 4]; /* 1u << FLAC__ENTROPY_CODING_METHOD_PARTITIONED_RICE_ORDER_LEN */
+            memset(f_raw_bits, 0, sizeof(f_raw_bits));
             contents.raw_bits = f_raw_bits;
             f.entropy_coding_method.data.partitioned_rice.contents = &contents;
             if (!FLAC__subframe_add_fixed(&f, residual_samples, eff_bps, d->wasted_bits, bw)) goto fail;
@@ -146,8 +162,11 @@ size_t fparity_assemble_frame(uint8_t *out, size_t out_cap,
                 FLAC__ENTROPY_CODING_METHOD_PARTITIONED_RICE;
             l.entropy_coding_method.data.partitioned_rice.order = d->partition_order;
             contents.parameters = (uint32_t *)d->rice_params;
-            /* See FIXED case: raw_bits[i] is read for every partition. */
-            uint32_t l_raw_bits[1u << FLAC__ENTROPY_CODING_METHOD_PARTITIONED_RICE_ORDER_LEN] = {0};
+            /* See FIXED case: raw_bits[i] is read for every partition, and the
+             * size macro is actually an extern const, so use the literal 1u<<4
+             * (VLA + initializer is rejected by GCC). */
+            uint32_t l_raw_bits[1u << 4]; /* 1u << FLAC__ENTROPY_CODING_METHOD_PARTITIONED_RICE_ORDER_LEN */
+            memset(l_raw_bits, 0, sizeof(l_raw_bits));
             contents.raw_bits = l_raw_bits;
             l.entropy_coding_method.data.partitioned_rice.contents = &contents;
             if (!FLAC__subframe_add_lpc(&l, residual_samples, eff_bps, d->wasted_bits, bw)) goto fail;

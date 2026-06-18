@@ -11,6 +11,10 @@
  * never rewrites it, so the two byte streams can be compared bit-for-bit.
  */
 
+#ifdef HAVE_CONFIG_H
+#  include <config.h>
+#endif
+
 #include "src/libFLAC/stream_encoder.c"
 
 #include <stdint.h>

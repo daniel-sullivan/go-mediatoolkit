@@ -15,6 +15,9 @@ package bitwriter
 #cgo CFLAGS: -I${SRCDIR}/../../../libflac/src/libFLAC/include
 #cgo CFLAGS: -Wno-unused-parameter -Wno-sign-compare -Wno-unused-function -Wno-unused-variable -Wno-static-in-inline
 
+#ifdef HAVE_CONFIG_H
+#  include <config.h>
+#endif
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>

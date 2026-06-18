@@ -14,6 +14,10 @@
  * it, byte-aligns, and copies the bitwriter buffer out.
  */
 
+#ifdef HAVE_CONFIG_H
+#  include <config.h>
+#endif
+
 #include "src/libFLAC/bitmath.c"
 #include "src/libFLAC/cpu.c"
 #include "src/libFLAC/crc.c"

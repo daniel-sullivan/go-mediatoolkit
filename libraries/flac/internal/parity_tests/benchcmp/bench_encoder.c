@@ -8,6 +8,10 @@
  * caller-supplied buffer via a write callback.
  */
 
+#ifdef HAVE_CONFIG_H
+#  include <config.h>
+#endif
+
 #include "src/libFLAC/stream_encoder.c"
 
 #include <stdint.h>

@@ -21,6 +21,10 @@
  * rewrite the call sites in window.c's body.
  */
 
+#ifdef HAVE_CONFIG_H
+#  include <config.h>
+#endif
+
 #include <math.h>
 #define cosf(x) ((float)cos((double)(x)))
 #define fabsf(x) ((float)fabs((double)(x)))

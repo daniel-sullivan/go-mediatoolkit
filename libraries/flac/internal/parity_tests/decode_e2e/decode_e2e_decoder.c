@@ -8,6 +8,10 @@
  * nativeflac decoder is compared against.
  */
 
+#ifdef HAVE_CONFIG_H
+#  include <config.h>
+#endif
+
 #include "src/libFLAC/stream_decoder.c"
 
 #include <stdint.h>

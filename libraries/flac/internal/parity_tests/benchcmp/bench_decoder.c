@@ -6,6 +6,10 @@
  * decoded interleaved int32 samples — the C side of the decode benchmark.
  */
 
+#ifdef HAVE_CONFIG_H
+#  include <config.h>
+#endif
+
 #include "src/libFLAC/stream_decoder.c"
 
 #include <stdint.h>

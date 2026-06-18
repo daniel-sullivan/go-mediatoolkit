@@ -7,6 +7,10 @@
  * the amalgamation split the e2e parity packages use.
  */
 
+#ifdef HAVE_CONFIG_H
+#  include <config.h>
+#endif
+
 #include "src/libFLAC/bitmath.c"
 #include "src/libFLAC/bitreader.c"
 #include "src/libFLAC/bitwriter.c"
@@ -47,3 +51,14 @@
 #include "src/libFLAC/stream_encoder_intrin_avx2.c"
 #include "src/libFLAC/stream_encoder_intrin_sse2.c"
 #include "src/libFLAC/stream_encoder_intrin_ssse3.c"
+
+/* On Windows (incl. mingw) libFLAC's compat.h redirects flac_fprintf/
+ * flac_fopen to fprintf_utf8/fopen_utf8 (lpc.c / stream_*coder.c call
+ * them), which live in share/win_utf8_io.c. That TU is not otherwise
+ * compiled into this parity binary, and this support TU is the single
+ * aggregator for the benchcmp package, so pull it in here to satisfy
+ * the link. No-op on non-Windows, where compat.h maps the flac_* macros
+ * straight to the stdio functions. */
+#ifdef _WIN32
+#include "src/share/win_utf8_io/win_utf8_io.c"
+#endif

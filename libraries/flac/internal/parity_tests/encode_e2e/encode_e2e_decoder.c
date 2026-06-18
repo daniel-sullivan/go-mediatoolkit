@@ -7,6 +7,10 @@
  * so the test can assert lossless round-trip against the original PCM.
  */
 
+#ifdef HAVE_CONFIG_H
+#  include <config.h>
+#endif
+
 #include "src/libFLAC/stream_decoder.c"
 
 #include <stdint.h>

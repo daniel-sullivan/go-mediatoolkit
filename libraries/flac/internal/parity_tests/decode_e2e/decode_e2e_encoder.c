@@ -7,6 +7,10 @@
  * via a write callback — the same shape the main cgo encoder uses.
  */
 
+#ifdef HAVE_CONFIG_H
+#  include <config.h>
+#endif
+
 #include "src/libFLAC/stream_encoder.c"
 
 #include <stdint.h>
