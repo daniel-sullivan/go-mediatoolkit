@@ -34,6 +34,42 @@ CFLAGS_CLEAN="-O2 -ffp-contract=off -fno-vectorize -fno-slp-vectorize -fno-unrol
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../../../../.." && pwd)"
 
+# Cross-architecture fixed-point parity shim (x86_64 ONLY).
+#
+# libFDK's fixed-point arithmetic is NOT bit-identical across CPU architectures,
+# so a default upstream build of libfdk-aac decodes/encodes ~0.9% of samples 1
+# LSB differently on x86_64 than on AArch64 (deterministic per-arch, independent
+# of -O level — verified -O0/-O1/-O2 are byte-identical to each other on
+# x86_64). Three primitives diverge — cplxMultDiv2 (early-vs-late truncation),
+# fixmul_DD/fMult (asr #31 vs >>32<<1, i.e. keeping vs dropping bit 31), and the
+# x86 floating-point sqrtFixp/invFixp/invSqrtNorm2/schur_div vs the generic
+# integer math AArch64 uses — and they feed the shared AAC-LC transform
+# (libFDK/src/{mdct,fft,dct}.cpp) + the encoder psy/quantizer, so both the
+# decoder synthesis filterbank and the encoder analysis filterbank are affected.
+# See x86_cplxmul_aarch64_parity.h for the per-primitive details.
+#
+# The pure-Go nativeaac port is a 1:1 port of the AArch64 path, so on x86_64 the
+# byte-exact / integer-exact parity assertions would fail against an unmodified
+# x86_64 libFDK reference even though the port is correct. To keep the
+# assertions STRICT (no tolerance) we force the x86_64 libFDK build to use the
+# AArch64 arithmetic, translated to portable C, via an `-include` of a small
+# shim. This is NOT an edit to the upstream tree (the tracked sources stay
+# pristine — see the pristine-check above) and NOT a weakening of the
+# comparison: it makes the reference compute the same canonical fixed-point
+# arithmetic on every architecture. On AArch64 the shim is a no-op (the native
+# path is already that arithmetic), so the build is untouched there.
+PARITY_SHIM="${SCRIPT_DIR}/x86_cplxmul_aarch64_parity.h"
+CXXFLAGS_CLEAN="${CFLAGS_CLEAN}"
+case "$(uname -m)" in
+  x86_64 | amd64)
+    # libfdk-aac.a is built entirely from C++ (.cpp) sources, so the shim only
+    # needs to be on CXXFLAGS; keeping CFLAGS plain lets configure's C-compiler
+    # conftest (a plain C program) still build, which an overloaded-inline C++
+    # header force-included into a .c conftest would break.
+    CXXFLAGS_CLEAN="${CFLAGS_CLEAN} -include ${PARITY_SHIM}"
+    ;;
+esac
+
 step() { printf '\n\033[1;34m==>\033[0m %s\n' "$*"; }
 
 step "Pristine upstream clone at ${UPSTREAM_DIR} (ref ${UPSTREAM_REF})"
@@ -52,10 +88,13 @@ fi
 
 LIB_A="${UPSTREAM_DIR}/.libs/libfdk-aac.a"
 step "Build upstream libfdk-aac (static) with matching CFLAGS"
-if [[ ! -f "${LIB_A}" ]]; then
+# Rebuild from scratch if the lib is missing OR a cached lib predates the parity
+# shim (so a local rerun after the shim landed doesn't silently reuse a stale,
+# non-shim x86_64 build). A fully clean clone (no .libs) always builds.
+if [[ ! -f "${LIB_A}" || "${PARITY_SHIM}" -nt "${LIB_A}" ]]; then
   ( cd "${UPSTREAM_DIR}" && \
     ./autogen.sh && \
-    ./configure --disable-shared --enable-static CFLAGS="${CFLAGS_CLEAN}" CXXFLAGS="${CFLAGS_CLEAN}" && \
+    ./configure --disable-shared --enable-static CFLAGS="${CFLAGS_CLEAN}" CXXFLAGS="${CXXFLAGS_CLEAN}" && \
     make -j8 )
 fi
 test -f "${LIB_A}"
