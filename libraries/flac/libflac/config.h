@@ -37,6 +37,17 @@
 #define HAVE_LROUND 1
 #endif
 
+/* MinGW (the toolchain GitHub's windows-latest Go runner uses for cgo)
+ * ships POSIX fseeko/ftello and C99 lround. Advertise them so compat.h
+ * does not fall into its `#define fseeko fseeko64` fallback (which
+ * collides with mingw-w64's own __mingw_ovr fseeko64 inline) and so
+ * lpc.c does not declare a private `lround` that conflicts with math.h.
+ * MSVC builds (no __MINGW32__) keep using compat.h's _fseeki64 mapping. */
+#if defined(__MINGW32__)
+#define HAVE_FSEEKO 1
+#define HAVE_LROUND 1
+#endif
+
 /* Platform identification. */
 #if defined(__APPLE__)
 #define FLAC__SYS_DARWIN
