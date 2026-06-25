@@ -50,7 +50,7 @@ The parity gate, oracle CGO flags, and per-slice status all live in `libraries/f
 ### Decoding
 
 ```go
-import flaccodec "go-mediatoolkit/codec/flac"
+import flaccodec "github.com/daniel-sullivan/go-mediatoolkit/codec/flac"
 
 dec, err := flaccodec.NewDecoder(r) // io.Reader of FLAC bytes → mutations.Audio
 
@@ -85,7 +85,7 @@ err = enc.Close()      // flushes the final frame + trailing metadata; w is not 
 ### With a container (tags)
 
 ```go
-import ctrflac "go-mediatoolkit/containers/flac"
+import ctrflac "github.com/daniel-sullivan/go-mediatoolkit/containers/flac"
 
 rd, err := ctrflac.NewReader(r)            // parses the metadata-block chain (tags, STREAMINFO)
 dec, err := flaccodec.NewDecoder(rd.Data()) // rd.Data() replays magic + metadata + frames

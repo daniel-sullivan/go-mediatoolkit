@@ -19,8 +19,8 @@
 package heaac
 
 import (
-	"go-mediatoolkit/libraries/aac/internal/nativeaac"
-	"go-mediatoolkit/libraries/aac/internal/nativeaac/sbr"
+	"github.com/daniel-sullivan/go-mediatoolkit/libraries/aac/internal/nativeaac"
+	"github.com/daniel-sullivan/go-mediatoolkit/libraries/aac/internal/nativeaac/sbr"
 )
 
 // PSEncoder is a complete HE-AAC v2 encoder: the SBR+PS encoder over the full-rate

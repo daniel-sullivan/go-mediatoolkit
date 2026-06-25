@@ -66,7 +66,7 @@ The parity gate, oracle CGO flags, and per-slice status all live in `libraries/a
 ### Decoding
 
 ```go
-import aaccodec "go-mediatoolkit/codec/aac"
+import aaccodec "github.com/daniel-sullivan/go-mediatoolkit/codec/aac"
 
 // asc is the AudioSpecificConfig — typically the bytes parsed from the MP4 esds
 // box (containers/mp4 exposes it as Header.Extra.Config).
@@ -105,7 +105,7 @@ AAC rides in two containers in this repo, and both supply a `PacketReader`/`Pack
 - **ADTS / raw `.aac`** ([`containers/adts`](../../containers/adts)) — the self-framed ADTS frame stream; the ASC is synthesised from each frame's 7-byte header.
 
 ```go
-import "go-mediatoolkit/containers/mp4"
+import "github.com/daniel-sullivan/go-mediatoolkit/containers/mp4"
 
 rd, err := mp4.NewReader(r)                                 // parses the ISOBMFF box tree
 hdr := rd.Header()                                          // SampleRate/Channels + tags + Extra.Config (ASC)
@@ -113,7 +113,7 @@ dec, err := aaccodec.NewDecoder(rd.Packets(), hdr.Extra.Config)
 ```
 
 ```go
-import "go-mediatoolkit/containers/adts"
+import "github.com/daniel-sullivan/go-mediatoolkit/containers/adts"
 
 rd, err := adts.NewReader(r)                                // parses the first ADTS header eagerly
 dec, err := aaccodec.NewDecoder(rd, rd.ASC())              // adts.Reader is itself a PacketReader

@@ -9,7 +9,7 @@ import (
 	"math/rand"
 	"testing"
 
-	"go-mediatoolkit/libraries/opus/internal/nativeopus"
+	"github.com/daniel-sullivan/go-mediatoolkit/libraries/opus/internal/nativeopus"
 )
 
 // ambisonicConfigs lists the (channels, order+1) pairs the projection

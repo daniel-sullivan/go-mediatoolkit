@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"go-mediatoolkit/mutations"
+	"github.com/daniel-sullivan/go-mediatoolkit/mutations"
 )
 
 func TestResizeScratchAllocatesWhenCapSmall(t *testing.T) {

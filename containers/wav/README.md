@@ -94,8 +94,8 @@ does **not** close the underlying stream.
 
 ```go
 import (
-    "go-mediatoolkit/codec/pcm"
-    "go-mediatoolkit/containers/wav"
+    "github.com/daniel-sullivan/go-mediatoolkit/codec/pcm"
+    "github.com/daniel-sullivan/go-mediatoolkit/containers/wav"
 )
 
 rd, err := wav.NewReader(r)        // parses the RIFF chunk tree

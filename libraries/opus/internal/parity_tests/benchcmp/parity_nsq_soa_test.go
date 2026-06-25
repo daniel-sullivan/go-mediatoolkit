@@ -6,7 +6,7 @@ import (
 	"math/rand"
 	"testing"
 
-	"go-mediatoolkit/libraries/opus/internal/nativeopus"
+	"github.com/daniel-sullivan/go-mediatoolkit/libraries/opus/internal/nativeopus"
 )
 
 // TestNSQDelDecSoA_Roundtrip verifies that the AoS <-> SoA conversion

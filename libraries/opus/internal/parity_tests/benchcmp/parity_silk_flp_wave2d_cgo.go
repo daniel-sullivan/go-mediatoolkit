@@ -129,7 +129,7 @@ import "C"
 import (
 	"unsafe"
 
-	"go-mediatoolkit/libraries/opus/internal/nativeopus"
+	"github.com/daniel-sullivan/go-mediatoolkit/libraries/opus/internal/nativeopus"
 )
 
 func cSilkFindPredCoefsFLP(p nativeopus.SilkFindPredCoefsFLPPayload) nativeopus.SilkFindPredCoefsFLPPayload {

@@ -15,8 +15,8 @@ package main
 import (
 	"log"
 
-	"go-mediatoolkit/codec/hwaccel"
-	"go-mediatoolkit/video"
+	"github.com/daniel-sullivan/go-mediatoolkit/codec/hwaccel"
+	"github.com/daniel-sullivan/go-mediatoolkit/video"
 )
 
 func main() {

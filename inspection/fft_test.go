@@ -5,7 +5,7 @@ import (
 	"math/cmplx"
 	"testing"
 
-	"go-mediatoolkit/inspection"
+	"github.com/daniel-sullivan/go-mediatoolkit/inspection"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

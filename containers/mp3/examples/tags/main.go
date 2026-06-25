@@ -13,7 +13,7 @@ import (
 	"log"
 	"os"
 
-	ctrmp3 "go-mediatoolkit/containers/mp3"
+	ctrmp3 "github.com/daniel-sullivan/go-mediatoolkit/containers/mp3"
 )
 
 func main() {

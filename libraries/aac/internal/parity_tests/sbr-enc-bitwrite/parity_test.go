@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go-mediatoolkit/libraries/aac/internal/nativeaac"
-	"go-mediatoolkit/libraries/aac/internal/nativeaac/sbr"
+	"github.com/daniel-sullivan/go-mediatoolkit/libraries/aac/internal/nativeaac"
+	"github.com/daniel-sullivan/go-mediatoolkit/libraries/aac/internal/nativeaac/sbr"
 )
 
 // goWriteSCE mirrors bwparity_run_sce using the pure-Go port.

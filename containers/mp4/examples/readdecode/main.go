@@ -28,9 +28,9 @@ import (
 	"slices"
 	"strings"
 
-	aaccodec "go-mediatoolkit/codec/aac"
-	"go-mediatoolkit/containers/mp4"
-	aaclib "go-mediatoolkit/libraries/aac"
+	aaccodec "github.com/daniel-sullivan/go-mediatoolkit/codec/aac"
+	"github.com/daniel-sullivan/go-mediatoolkit/containers/mp4"
+	aaclib "github.com/daniel-sullivan/go-mediatoolkit/libraries/aac"
 )
 
 func main() {

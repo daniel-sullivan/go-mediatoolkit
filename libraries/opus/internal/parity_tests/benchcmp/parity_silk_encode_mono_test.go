@@ -7,7 +7,7 @@ import (
 	"math"
 	"testing"
 
-	"go-mediatoolkit/libraries/opus/internal/nativeopus"
+	"github.com/daniel-sullivan/go-mediatoolkit/libraries/opus/internal/nativeopus"
 )
 
 // TestParity_SilkEncode_Mono — Phase 8 capstone.

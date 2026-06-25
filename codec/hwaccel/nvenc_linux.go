@@ -53,7 +53,7 @@ import (
 	"fmt"
 	"sync"
 
-	"go-mediatoolkit/video"
+	"github.com/daniel-sullivan/go-mediatoolkit/video"
 )
 
 // nvBackend is the NVENC/NVDEC hwaccel.Backend. The CUDA context is created

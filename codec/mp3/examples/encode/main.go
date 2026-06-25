@@ -21,8 +21,8 @@ import (
 	"os"
 	"time"
 
-	codecmp3 "go-mediatoolkit/codec/mp3"
-	"go-mediatoolkit/generators"
+	codecmp3 "github.com/daniel-sullivan/go-mediatoolkit/codec/mp3"
+	"github.com/daniel-sullivan/go-mediatoolkit/generators"
 )
 
 func main() {

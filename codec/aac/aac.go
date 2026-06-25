@@ -18,12 +18,12 @@
 //
 // Because AAC has no single standard byte-stream framing, this package
 // uses [PacketReader] and [PacketWriter] interfaces for packet I/O, exactly
-// as [go-mediatoolkit/codec/opus] does. Callers provide their own framing
+// as [github.com/daniel-sullivan/go-mediatoolkit/codec/opus] does. Callers provide their own framing
 // implementation (MP4/ISOBMFF sample tables, ADTS, LATM/LOAS, …); tags and
-// metadata are a container concern (see [go-mediatoolkit/containers/mp4]),
+// metadata are a container concern (see [github.com/daniel-sullivan/go-mediatoolkit/containers/mp4]),
 // not a codec one.
 //
-// The encoder and decoder wrap the [go-mediatoolkit/libraries/aac] package,
+// The encoder and decoder wrap the [github.com/daniel-sullivan/go-mediatoolkit/libraries/aac] package,
 // adding streaming semantics and buffering (via [mutations.StreamChunker]
 // plus a remainder buffer) so callers can read/write arbitrary sample
 // counts without worrying about AAC access-unit boundaries.
@@ -37,14 +37,14 @@ package aac
 import (
 	"io"
 
-	"go-mediatoolkit/codec"
-	aaclib "go-mediatoolkit/libraries/aac"
-	"go-mediatoolkit/mutations"
+	"github.com/daniel-sullivan/go-mediatoolkit/codec"
+	aaclib "github.com/daniel-sullivan/go-mediatoolkit/libraries/aac"
+	"github.com/daniel-sullivan/go-mediatoolkit/mutations"
 )
 
 // PacketReader reads individual AAC access units from a source. The caller
 // is responsible for framing (e.g., reading samples from an MP4 sample
-// table via [go-mediatoolkit/containers/mp4]).
+// table via [github.com/daniel-sullivan/go-mediatoolkit/containers/mp4]).
 type PacketReader interface {
 	// ReadPacket returns the next AAC access unit. Returns io.EOF when no
 	// more packets are available.

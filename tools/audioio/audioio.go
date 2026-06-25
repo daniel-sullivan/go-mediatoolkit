@@ -13,8 +13,8 @@ package audioio
 import (
 	"sync/atomic"
 
-	"go-mediatoolkit/devices"
-	"go-mediatoolkit/timeline"
+	"github.com/daniel-sullivan/go-mediatoolkit/devices"
+	"github.com/daniel-sullivan/go-mediatoolkit/timeline"
 )
 
 // InputCapture pairs a capture-side devices.Stream with a

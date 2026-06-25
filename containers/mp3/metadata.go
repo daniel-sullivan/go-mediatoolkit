@@ -4,7 +4,7 @@ import (
 	"encoding/binary"
 	"strings"
 
-	"go-mediatoolkit/containers"
+	"github.com/daniel-sullivan/go-mediatoolkit/containers"
 )
 
 // id3v2Magic is the three-byte identifier ("ID3") that opens an ID3v2 tag.

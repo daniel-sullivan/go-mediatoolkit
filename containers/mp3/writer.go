@@ -3,7 +3,7 @@ package mp3
 import (
 	"io"
 
-	mp3lib "go-mediatoolkit/libraries/mp3"
+	mp3lib "github.com/daniel-sullivan/go-mediatoolkit/libraries/mp3"
 )
 
 // Writer encodes an MP3 stream from a [Header] and interleaved int16 samples.

@@ -56,8 +56,8 @@ ADTS parsing is **streaming**, not random-access: a `Reader` walks frames front-
 
 ```go
 import (
-    "go-mediatoolkit/containers/adts"
-    aaccodec "go-mediatoolkit/codec/aac"
+    "github.com/daniel-sullivan/go-mediatoolkit/containers/adts"
+    aaccodec "github.com/daniel-sullivan/go-mediatoolkit/codec/aac"
 )
 
 rd, err := adts.NewReader(r)       // parses the first frame; resyncs as needed

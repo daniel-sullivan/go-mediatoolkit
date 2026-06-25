@@ -27,7 +27,7 @@ import (
 	"time"
 	"unsafe"
 
-	"go-mediatoolkit/video"
+	"github.com/daniel-sullivan/go-mediatoolkit/video"
 )
 
 // vaEncoder drives a single VA-API low-power encode pipeline. All state is

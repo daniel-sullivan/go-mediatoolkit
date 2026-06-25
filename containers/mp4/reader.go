@@ -4,9 +4,9 @@ import (
 	"io"
 	"time"
 
-	"go-mediatoolkit/containers"
-	aaclib "go-mediatoolkit/libraries/aac"
-	"go-mediatoolkit/mutations"
+	"github.com/daniel-sullivan/go-mediatoolkit/containers"
+	aaclib "github.com/daniel-sullivan/go-mediatoolkit/libraries/aac"
+	"github.com/daniel-sullivan/go-mediatoolkit/mutations"
 )
 
 // Box types for the nested audio-track hierarchy
@@ -28,7 +28,7 @@ var (
 // access units it carries via [Reader.Packets]. The whole file is buffered
 // in memory because chunk offsets are absolute file positions; the returned
 // packet reader yields one AAC access unit per call, ready to feed into
-// [go-mediatoolkit/codec/aac.NewDecoder] together with [Header].Extra.Config.
+// [github.com/daniel-sullivan/go-mediatoolkit/codec/aac.NewDecoder] together with [Header].Extra.Config.
 //
 // A Reader is not safe for concurrent use.
 type Reader struct {
@@ -332,7 +332,7 @@ func (r *Reader) Header() Header { return r.header }
 
 // Packets returns a [PacketReader] over the AAC access units carried in the
 // mdat box, in decode order. Feed it (with [Header].Extra.Config) into
-// [go-mediatoolkit/codec/aac.NewDecoder].
+// [github.com/daniel-sullivan/go-mediatoolkit/codec/aac.NewDecoder].
 func (r *Reader) Packets() *PacketReader {
 	return &PacketReader{packets: r.packets}
 }
@@ -342,7 +342,7 @@ func (r *Reader) Packets() *PacketReader {
 func (r *Reader) AccessUnits() [][]byte { return r.packets }
 
 // PacketReader yields AAC access units one at a time. It satisfies
-// [go-mediatoolkit/codec/aac.PacketReader].
+// [github.com/daniel-sullivan/go-mediatoolkit/codec/aac.PacketReader].
 type PacketReader struct {
 	packets [][]byte
 	i       int

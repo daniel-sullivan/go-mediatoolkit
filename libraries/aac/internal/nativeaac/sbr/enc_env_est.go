@@ -24,7 +24,7 @@
 // are reused bit-for-bit from internal/nativeaac.
 package sbr
 
-import "go-mediatoolkit/libraries/aac/internal/nativeaac"
+import "github.com/daniel-sullivan/go-mediatoolkit/libraries/aac/internal/nativeaac"
 
 // env_est.cpp constants.
 const (

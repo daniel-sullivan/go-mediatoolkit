@@ -19,7 +19,7 @@
 // HE-AAC v1 only: PS uses the QMF downsampler (SBRENC_DS_QMF), not this path.
 package sbr
 
-import "go-mediatoolkit/libraries/aac/internal/nativeaac"
+import "github.com/daniel-sullivan/go-mediatoolkit/libraries/aac/internal/nativeaac"
 
 const (
 	resamplerMaxnrSections = 15 // MAXNR_SECTIONS (resampler.h:116)

@@ -16,7 +16,7 @@ import (
 	"strings"
 	"time"
 
-	"go-mediatoolkit/mutations"
+	"github.com/daniel-sullivan/go-mediatoolkit/mutations"
 )
 
 // Header describes a container's stream metadata in a format-agnostic way.
@@ -259,7 +259,7 @@ func (t Tags) Keys() []string {
 
 // PacketReader reads one encoded packet at a time from a packet-oriented
 // container (e.g., Ogg). It is structurally compatible with
-// [go-mediatoolkit/codec/opus.PacketReader].
+// [github.com/daniel-sullivan/go-mediatoolkit/codec/opus.PacketReader].
 type PacketReader interface {
 	// ReadPacket returns the next packet. Returns io.EOF when exhausted.
 	ReadPacket() ([]byte, error)
@@ -267,7 +267,7 @@ type PacketReader interface {
 
 // PacketWriter writes one encoded packet at a time to a packet-oriented
 // container. It is structurally compatible with
-// [go-mediatoolkit/codec/opus.PacketWriter].
+// [github.com/daniel-sullivan/go-mediatoolkit/codec/opus.PacketWriter].
 type PacketWriter interface {
 	WritePacket([]byte) error
 }

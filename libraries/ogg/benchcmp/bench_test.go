@@ -5,7 +5,7 @@ package benchcmp
 import (
 	"testing"
 
-	"go-mediatoolkit/libraries/ogg"
+	"github.com/daniel-sullivan/go-mediatoolkit/libraries/ogg"
 )
 
 func makeTestData(size int) []byte {

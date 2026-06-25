@@ -6,7 +6,7 @@ package sbrenvcalc
 import (
 	"testing"
 
-	"go-mediatoolkit/libraries/aac/internal/nativeaac/sbr"
+	"github.com/daniel-sullivan/go-mediatoolkit/libraries/aac/internal/nativeaac/sbr"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

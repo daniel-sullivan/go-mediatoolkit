@@ -14,7 +14,7 @@ package hwaccel
 import (
 	"unsafe"
 
-	"go-mediatoolkit/video"
+	"github.com/daniel-sullivan/go-mediatoolkit/video"
 )
 
 // H.264 NAL unit types (nal[0] & 0x1f).

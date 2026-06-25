@@ -61,8 +61,8 @@ buffer.
 ## Usage
 
 ```go
-import "go-mediatoolkit/consts"
-import "go-mediatoolkit/generators"
+import "github.com/daniel-sullivan/go-mediatoolkit/consts"
+import "github.com/daniel-sullivan/go-mediatoolkit/generators"
 
 // A 1-second A4 tone at 48 kHz — a mono mutations.Audio, no device involved.
 tone := generators.Sine(consts.FreqNoteA4, time.Second, consts.SampleRate48000)

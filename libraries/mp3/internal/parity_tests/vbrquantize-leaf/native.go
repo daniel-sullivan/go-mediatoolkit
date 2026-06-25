@@ -4,7 +4,7 @@
 
 package vbrquantizeleaf
 
-import "go-mediatoolkit/libraries/mp3/internal/nativemp3"
+import "github.com/daniel-sullivan/go-mediatoolkit/libraries/mp3/internal/nativemp3"
 
 // native.go drives the pure-Go nativemp3 port the same way oracle.c drives the
 // vendored C: each wrapper forwards the identical flat inputs into the

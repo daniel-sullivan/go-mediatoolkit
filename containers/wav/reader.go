@@ -5,8 +5,8 @@ import (
 	"encoding/binary"
 	"io"
 
-	"go-mediatoolkit/containers"
-	"go-mediatoolkit/mutations"
+	"github.com/daniel-sullivan/go-mediatoolkit/containers"
+	"github.com/daniel-sullivan/go-mediatoolkit/mutations"
 )
 
 // Reader parses a RIFF/WAVE file and exposes the PCM data chunk as an
@@ -161,7 +161,7 @@ func NewReader(r io.Reader) (*Reader, error) {
 func (r *Reader) Header() Header { return r.header }
 
 // Data returns an io.Reader over the raw PCM bytes in the data chunk.
-// Feed this to [go-mediatoolkit/codec/pcm.NewDecoder] to obtain float64
+// Feed this to [github.com/daniel-sullivan/go-mediatoolkit/codec/pcm.NewDecoder] to obtain float64
 // samples. Reading past the end returns io.EOF.
 func (r *Reader) Data() io.Reader { return r.data }
 

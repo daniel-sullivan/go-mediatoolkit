@@ -11,7 +11,7 @@ Ogg is a general-purpose container format for framing, error detection, and inte
 ## Usage
 
 ```go
-import "go-mediatoolkit/libraries/ogg"
+import "github.com/daniel-sullivan/go-mediatoolkit/libraries/ogg"
 ```
 
 ### Encoding packets into pages

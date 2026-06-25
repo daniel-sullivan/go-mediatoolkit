@@ -10,8 +10,8 @@
 
 A pure-Go audio **and** video toolkit: streaming codecs, containers, a sample
 pipeline (resample / mutate / mix / time-line), OS audio devices, and a
-hardware-accelerated video offload framework — module `go-mediatoolkit`, Go
-**1.26**.
+hardware-accelerated video offload framework — module
+`github.com/daniel-sullivan/go-mediatoolkit`, Go **1.26**.
 
 The defining trait of this repo is **fidelity**. Every compressed audio codec is
 a **1:1 port of its canonical C reference** held to a **bit-exact / byte-identical
@@ -172,8 +172,8 @@ import (
 	"log"
 	"time"
 
-	flaccodec "go-mediatoolkit/codec/flac"
-	"go-mediatoolkit/generators"
+	flaccodec "github.com/daniel-sullivan/go-mediatoolkit/codec/flac"
+	"github.com/daniel-sullivan/go-mediatoolkit/generators"
 )
 
 func main() {

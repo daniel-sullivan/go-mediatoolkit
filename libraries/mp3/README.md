@@ -9,7 +9,7 @@ MP3 is a **self-framed** codec: the byte stream itself carries frame-sync header
 ## Usage
 
 ```go
-import "go-mediatoolkit/libraries/mp3"
+import "github.com/daniel-sullivan/go-mediatoolkit/libraries/mp3"
 ```
 
 `libraries/mp3` operates on interleaved **`int16`** samples (signed 16-bit PCM — MP3's natural decode type) and reads/writes a continuous MP3 byte stream of self-framed frames. For stereo: `[L0, R0, L1, R1, ...]`.
@@ -60,7 +60,7 @@ The encoder is a derivative of LAME and is therefore LGPL-2.0-or-later; it is co
 ### Streaming float64 (`codec/mp3`)
 
 ```go
-import codecmp3 "go-mediatoolkit/codec/mp3"
+import codecmp3 "github.com/daniel-sullivan/go-mediatoolkit/codec/mp3"
 
 dec, err := codecmp3.NewDecoder(r)                    // io.Reader → mutations.Audio
 enc, err := codecmp3.NewEncoder(w, 44100, 2,          // float64 in, MP3 out (needs -tags mp3lame)
@@ -70,7 +70,7 @@ enc, err := codecmp3.NewEncoder(w, 44100, 2,          // float64 in, MP3 out (ne
 ### Metadata & tags (`containers/mp3`)
 
 ```go
-import ctrmp3 "go-mediatoolkit/containers/mp3"
+import ctrmp3 "github.com/daniel-sullivan/go-mediatoolkit/containers/mp3"
 
 rd, err := ctrmp3.NewReader(r)   // parses the leading ID3v2 (and trailing ID3v1 if seekable)
 hdr := rd.Header()               // SampleRate/Channels + standard tags + ID3 extras

@@ -3,7 +3,7 @@ package resample_test
 import (
 	"testing"
 
-	"go-mediatoolkit/resample"
+	"github.com/daniel-sullivan/go-mediatoolkit/resample"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

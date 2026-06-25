@@ -98,8 +98,8 @@ type Policy struct {
 
 ```go
 import (
-    "go-mediatoolkit/codec/hwaccel"
-    "go-mediatoolkit/video"
+    "github.com/daniel-sullivan/go-mediatoolkit/codec/hwaccel"
+    "github.com/daniel-sullivan/go-mediatoolkit/video"
 )
 
 // Encode: raw NV12 frames → H.265 packets, on hardware if available.

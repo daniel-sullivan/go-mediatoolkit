@@ -3,7 +3,7 @@
 
 package sbr
 
-import "go-mediatoolkit/libraries/aac/internal/nativeaac"
+import "github.com/daniel-sullivan/go-mediatoolkit/libraries/aac/internal/nativeaac"
 
 // QMF synthesis: 64-band complex subband matrix -> time samples, the
 // HIGH-QUALITY (complex) STD path. 1:1 port of qmfInverseModulationHQ

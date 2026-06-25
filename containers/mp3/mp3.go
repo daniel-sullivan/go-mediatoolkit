@@ -9,7 +9,7 @@
 // A [Reader] parses the leading ID3v2 tag (and the trailing ID3v1 tag when
 // the stream is seekable) and exposes a continuous [io.Reader] over the
 // original byte stream — including the ID3 bytes — so callers can pipe it
-// straight into [go-mediatoolkit/libraries/mp3.NewDecoder]. (The decoder
+// straight into [github.com/daniel-sullivan/go-mediatoolkit/libraries/mp3.NewDecoder]. (The decoder
 // skips ID3 frames itself, so no re-seeking is required.)
 //
 // A [Writer] wraps a [libraries/mp3.Encoder]. It projects a [containers.Header]
@@ -22,7 +22,7 @@
 // names used across the toolkit.
 package mp3
 
-import "go-mediatoolkit/containers"
+import "github.com/daniel-sullivan/go-mediatoolkit/containers"
 
 // Header is the container Header specialised to MP3 Extras.
 type Header = containers.Header[Extras]

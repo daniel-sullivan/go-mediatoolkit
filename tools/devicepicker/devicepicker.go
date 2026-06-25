@@ -29,7 +29,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"golang.org/x/term"
 
-	"go-mediatoolkit/devices"
+	"github.com/daniel-sullivan/go-mediatoolkit/devices"
 )
 
 // ErrCancelled is returned when the user aborts the picker.

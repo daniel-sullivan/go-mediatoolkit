@@ -6,7 +6,7 @@ import (
 	"math"
 	"testing"
 
-	"go-mediatoolkit/libraries/opus/internal/nativeopus"
+	"github.com/daniel-sullivan/go-mediatoolkit/libraries/opus/internal/nativeopus"
 )
 
 // TestParity_OpusEncodeFrameNative — 9f-E smoke/round-trip test.

@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"testing"
 
-	"go-mediatoolkit/libraries/opus/internal/nativeopus"
+	"github.com/daniel-sullivan/go-mediatoolkit/libraries/opus/internal/nativeopus"
 )
 
 // TestParity_OpusEncoderGetSize — opus_encoder_get_size sweep over

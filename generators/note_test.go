@@ -8,8 +8,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go-mediatoolkit/consts"
-	"go-mediatoolkit/generators"
+	"github.com/daniel-sullivan/go-mediatoolkit/consts"
+	"github.com/daniel-sullivan/go-mediatoolkit/generators"
 )
 
 func TestNoteLength(t *testing.T) {

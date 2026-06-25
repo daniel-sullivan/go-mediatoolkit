@@ -3,7 +3,7 @@ package flac
 import (
 	"io"
 
-	"go-mediatoolkit/libraries/flac/internal/nativeflac"
+	"github.com/daniel-sullivan/go-mediatoolkit/libraries/flac/internal/nativeflac"
 )
 
 // newNativeDecoder builds a Decoder backed by the pure-Go nativeflac

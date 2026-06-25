@@ -3,8 +3,8 @@ package flac
 import (
 	"io"
 
-	flaclib "go-mediatoolkit/libraries/flac"
-	"go-mediatoolkit/mutations"
+	flaclib "github.com/daniel-sullivan/go-mediatoolkit/libraries/flac"
+	"github.com/daniel-sullivan/go-mediatoolkit/mutations"
 )
 
 // decoder wraps a [libraries/flac.Decoder] and converts its int32

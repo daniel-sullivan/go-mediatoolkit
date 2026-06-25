@@ -28,8 +28,8 @@ import (
 	"log"
 	"math"
 
-	"go-mediatoolkit/consts"
-	aaclib "go-mediatoolkit/libraries/aac"
+	"github.com/daniel-sullivan/go-mediatoolkit/consts"
+	aaclib "github.com/daniel-sullivan/go-mediatoolkit/libraries/aac"
 )
 
 func main() {

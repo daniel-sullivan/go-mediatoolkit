@@ -3,7 +3,7 @@ package mp4
 import (
 	"encoding/binary"
 
-	"go-mediatoolkit/containers"
+	"github.com/daniel-sullivan/go-mediatoolkit/containers"
 )
 
 // itunesTagKeys maps iTunes ilst four-character atom names to the

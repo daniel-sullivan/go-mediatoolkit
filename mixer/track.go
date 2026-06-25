@@ -4,7 +4,7 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"go-mediatoolkit/timeline"
+	"github.com/daniel-sullivan/go-mediatoolkit/timeline"
 )
 
 // TrackHandle is the caller's view of a track installed on a Mixer.

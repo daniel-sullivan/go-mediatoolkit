@@ -3,7 +3,7 @@
 
 package sbr
 
-import "go-mediatoolkit/libraries/aac/internal/nativeaac"
+import "github.com/daniel-sullivan/go-mediatoolkit/libraries/aac/internal/nativeaac"
 
 // QMF filterbank ROM, a 1:1 port of the vendored libFDK tables in
 // FDK_tools_rom.cpp. Under the active build config (QMF_COEFF_16BIT and

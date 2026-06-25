@@ -27,7 +27,7 @@ package hwaccel
 import (
 	"sync"
 
-	"go-mediatoolkit/video"
+	"github.com/daniel-sullivan/go-mediatoolkit/video"
 )
 
 // v4l2NodeKind classifies an M2M node by decode architecture.

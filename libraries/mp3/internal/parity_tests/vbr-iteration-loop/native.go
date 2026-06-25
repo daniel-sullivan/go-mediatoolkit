@@ -4,7 +4,7 @@
 
 package vbriterationloop
 
-import "go-mediatoolkit/libraries/mp3/internal/nativemp3"
+import "github.com/daniel-sullivan/go-mediatoolkit/libraries/mp3/internal/nativemp3"
 
 // native.go drives the pure-Go nativemp3 VBR iteration loops the same way
 // oracle.c drives the vendored C: a goHandle carries a LameInternalFlags

@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go-mediatoolkit/libraries/aac/internal/nativeaac/sbr"
+	"github.com/daniel-sullivan/go-mediatoolkit/libraries/aac/internal/nativeaac/sbr"
 )
 
 // TestWhFactorsROM verifies the LPP whitening ROM (sbr_rom.cpp) is byte-identical

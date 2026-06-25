@@ -26,7 +26,7 @@ package sbr
 // any build.
 
 import (
-	"go-mediatoolkit/libraries/aac/internal/nativeaac"
+	"github.com/daniel-sullivan/go-mediatoolkit/libraries/aac/internal/nativeaac"
 )
 
 // --- pseudo-float pack masks + rounding (env_extr.h:137-150) ----------------

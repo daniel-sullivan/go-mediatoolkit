@@ -21,7 +21,7 @@ import (
 	"runtime"
 	"unsafe"
 
-	"go-mediatoolkit/video"
+	"github.com/daniel-sullivan/go-mediatoolkit/video"
 )
 
 // decodeOBUOrFrame decodes one VP9 frame/superframe or AV1 temporal unit.

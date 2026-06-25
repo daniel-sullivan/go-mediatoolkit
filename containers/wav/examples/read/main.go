@@ -17,7 +17,7 @@ import (
 	"slices"
 	"strings"
 
-	"go-mediatoolkit/containers/wav"
+	"github.com/daniel-sullivan/go-mediatoolkit/containers/wav"
 )
 
 func main() {

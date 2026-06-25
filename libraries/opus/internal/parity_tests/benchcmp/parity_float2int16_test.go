@@ -7,7 +7,7 @@ import (
 	"math/rand"
 	"testing"
 
-	"go-mediatoolkit/libraries/opus/internal/nativeopus"
+	"github.com/daniel-sullivan/go-mediatoolkit/libraries/opus/internal/nativeopus"
 )
 
 // TestParity_CeltFloat2Int16_SIMDvsScalar cross-checks the NEON

@@ -17,7 +17,7 @@ import (
 	"log"
 	"os"
 
-	"go-mediatoolkit/containers/adts"
+	"github.com/daniel-sullivan/go-mediatoolkit/containers/adts"
 )
 
 func main() {

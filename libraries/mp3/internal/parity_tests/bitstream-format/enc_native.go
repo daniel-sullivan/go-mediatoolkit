@@ -4,7 +4,7 @@
 
 package bitstreamformat
 
-import "go-mediatoolkit/libraries/mp3/internal/nativemp3"
+import "github.com/daniel-sullivan/go-mediatoolkit/libraries/mp3/internal/nativemp3"
 
 // enc_native.go drives the pure-Go nativemp3 LAME-encoder bitstream-format port
 // (bitstream_format.go / reservoir_encode.go) through helpers shaped like the

@@ -2,7 +2,7 @@
 //
 // A [Reader] parses the RIFF header, optional metadata chunks (LIST/INFO,
 // bext), and exposes the data chunk payload as an [io.Reader] of raw PCM
-// bytes. Callers feed that into [go-mediatoolkit/codec/pcm.NewDecoder] to
+// bytes. Callers feed that into [github.com/daniel-sullivan/go-mediatoolkit/codec/pcm.NewDecoder] to
 // obtain float64 samples.
 //
 // A [Writer] emits a RIFF/WAVE header from a user-supplied
@@ -15,7 +15,7 @@
 // are honoured.
 package wav
 
-import "go-mediatoolkit/containers"
+import "github.com/daniel-sullivan/go-mediatoolkit/containers"
 
 // Header is the container Header specialised to WAV Extras.
 type Header = containers.Header[Extras]

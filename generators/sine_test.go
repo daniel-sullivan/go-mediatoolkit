@@ -4,9 +4,9 @@ import (
 	"testing"
 	"time"
 
-	"go-mediatoolkit/consts"
+	"github.com/daniel-sullivan/go-mediatoolkit/consts"
 
-	"go-mediatoolkit/generators"
+	"github.com/daniel-sullivan/go-mediatoolkit/generators"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

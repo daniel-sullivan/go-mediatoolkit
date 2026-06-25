@@ -6,12 +6,12 @@ import (
 	"os"
 	"testing"
 
-	"go-mediatoolkit/codec"
+	"github.com/daniel-sullivan/go-mediatoolkit/codec"
 
-	"go-mediatoolkit/codec/pcm"
-	"go-mediatoolkit/consts"
-	"go-mediatoolkit/containers"
-	"go-mediatoolkit/mutations"
+	"github.com/daniel-sullivan/go-mediatoolkit/codec/pcm"
+	"github.com/daniel-sullivan/go-mediatoolkit/consts"
+	"github.com/daniel-sullivan/go-mediatoolkit/containers"
+	"github.com/daniel-sullivan/go-mediatoolkit/mutations"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

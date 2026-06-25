@@ -17,7 +17,7 @@ import (
 	"slices"
 	"strings"
 
-	flac "go-mediatoolkit/containers/flac"
+	flac "github.com/daniel-sullivan/go-mediatoolkit/containers/flac"
 )
 
 func main() {

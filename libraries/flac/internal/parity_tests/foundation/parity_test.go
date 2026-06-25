@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go-mediatoolkit/libraries/flac/internal/nativeflac"
+	"github.com/daniel-sullivan/go-mediatoolkit/libraries/flac/internal/nativeflac"
 )
 
 // Each parity test below pins the Go port against the cgo libFLAC

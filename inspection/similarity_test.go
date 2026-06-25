@@ -5,10 +5,10 @@ import (
 	"testing"
 	"time"
 
-	"go-mediatoolkit/consts"
+	"github.com/daniel-sullivan/go-mediatoolkit/consts"
 
-	"go-mediatoolkit/generators"
-	"go-mediatoolkit/inspection"
+	"github.com/daniel-sullivan/go-mediatoolkit/generators"
+	"github.com/daniel-sullivan/go-mediatoolkit/inspection"
 
 	"github.com/stretchr/testify/assert"
 )

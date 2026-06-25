@@ -10,12 +10,12 @@ import (
 	"os"
 	"time"
 
-	"go-mediatoolkit/codec/opus"
-	"go-mediatoolkit/consts"
-	"go-mediatoolkit/containers"
-	"go-mediatoolkit/containers/ogg"
-	"go-mediatoolkit/generators"
-	opuslib "go-mediatoolkit/libraries/opus"
+	"github.com/daniel-sullivan/go-mediatoolkit/codec/opus"
+	"github.com/daniel-sullivan/go-mediatoolkit/consts"
+	"github.com/daniel-sullivan/go-mediatoolkit/containers"
+	"github.com/daniel-sullivan/go-mediatoolkit/containers/ogg"
+	"github.com/daniel-sullivan/go-mediatoolkit/generators"
+	opuslib "github.com/daniel-sullivan/go-mediatoolkit/libraries/opus"
 )
 
 func main() {

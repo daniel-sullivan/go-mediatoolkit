@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	"go-mediatoolkit/events"
+	"github.com/daniel-sullivan/go-mediatoolkit/events"
 )
 
 // Mode selects how aggressively Open* insists on hardware.

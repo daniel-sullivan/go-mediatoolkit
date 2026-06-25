@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"go-mediatoolkit/consts"
+	"github.com/daniel-sullivan/go-mediatoolkit/consts"
 )
 
 func TestWhiteNoise_Shape(t *testing.T) {

@@ -20,7 +20,7 @@ package hwaccel
 import (
 	"unsafe"
 
-	"go-mediatoolkit/video"
+	"github.com/daniel-sullivan/go-mediatoolkit/video"
 )
 
 // decodeVP9 splits the packet into VP9 frames (handling a superframe index),

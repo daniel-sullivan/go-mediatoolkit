@@ -19,7 +19,7 @@
 // distinguish these from the decode-side helpers of the same concept.
 package sbr
 
-import "go-mediatoolkit/libraries/aac/internal/nativeaac"
+import "github.com/daniel-sullivan/go-mediatoolkit/libraries/aac/internal/nativeaac"
 
 // maxOctave (29), maxSecondRegion (50), maxFreqCoeffsFs44100 (35) and
 // maxFreqCoeffsFs48000 (32) are already defined by the decode-side freq_sca.go

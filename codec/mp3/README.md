@@ -21,7 +21,7 @@ This package is a thin float64 adapter over [`libraries/mp3`](../../libraries/mp
 ### Decoding
 
 ```go
-import codecmp3 "go-mediatoolkit/codec/mp3"
+import codecmp3 "github.com/daniel-sullivan/go-mediatoolkit/codec/mp3"
 
 dec, err := codecmp3.NewDecoder(r) // io.Reader of MP3 bytes → mutations.Audio
 
@@ -58,7 +58,7 @@ The encoder is a derivative of **LAME** and is therefore **LGPL-2.0-or-later**. 
 ### With a container (ID3)
 
 ```go
-import ctrmp3 "go-mediatoolkit/containers/mp3"
+import ctrmp3 "github.com/daniel-sullivan/go-mediatoolkit/containers/mp3"
 
 rd, err := ctrmp3.NewReader(r)           // parses the leading ID3v2 (+ trailing ID3v1 if seekable)
 dec, err := codecmp3.NewDecoder(rd.Data()) // rd.Data() replays ID3 prefix + audio frames

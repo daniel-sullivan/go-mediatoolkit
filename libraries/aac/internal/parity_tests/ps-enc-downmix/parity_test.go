@@ -9,8 +9,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"go-mediatoolkit/libraries/aac/internal/nativeaac"
-	"go-mediatoolkit/libraries/aac/internal/nativeaac/sbr"
+	"github.com/daniel-sullivan/go-mediatoolkit/libraries/aac/internal/nativeaac"
+	"github.com/daniel-sullivan/go-mediatoolkit/libraries/aac/internal/nativeaac/sbr"
 )
 
 // genPSStereoPCM mirrors the ps-enc-e2e generator: a sum of a low tone (AAC core)

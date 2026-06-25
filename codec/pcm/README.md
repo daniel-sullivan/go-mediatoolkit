@@ -33,8 +33,8 @@ Any [`mutations.SampleFormat`](../../mutations): `FormatUint8`, `FormatInt16`, `
 ```go
 import "io"
 import "log"
-import "go-mediatoolkit/codec/pcm"
-import "go-mediatoolkit/mutations"
+import "github.com/daniel-sullivan/go-mediatoolkit/codec/pcm"
+import "github.com/daniel-sullivan/go-mediatoolkit/mutations"
 
 // format, sampleRate, channels are not in the stream — supply them.
 dec, err := pcm.NewDecoder(r, 44100, 2, mutations.FormatInt16) // raw bytes → mutations.Audio
@@ -65,7 +65,7 @@ err = enc.Close()       // flushes buffered bytes; the underlying writer is not 
 ### With a container (`.wav`)
 
 ```go
-import "go-mediatoolkit/containers/wav"
+import "github.com/daniel-sullivan/go-mediatoolkit/containers/wav"
 
 rd, err := wav.NewReader(r)        // parses the fmt chunk → format/rate/channels
 hdr := rd.Header()

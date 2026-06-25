@@ -3,7 +3,7 @@ package timeline
 import (
 	"time"
 
-	"go-mediatoolkit/mutations"
+	"github.com/daniel-sullivan/go-mediatoolkit/mutations"
 )
 
 // Transform declaratively shapes samples produced by a Cue. The zero

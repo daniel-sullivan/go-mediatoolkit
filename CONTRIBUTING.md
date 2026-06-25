@@ -1,6 +1,6 @@
 # Contributing to go-mediatoolkit
 
-Pure-Go audio + video toolkit. Module path: `go-mediatoolkit` (no domain). Go 1.26. Only runtime dep: `github.com/stretchr/testify`.
+Pure-Go audio + video toolkit. Module path: `github.com/daniel-sullivan/go-mediatoolkit`. Go 1.26. Only runtime dep: `github.com/stretchr/testify`.
 
 ## Packages
 

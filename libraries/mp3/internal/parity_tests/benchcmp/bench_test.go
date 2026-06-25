@@ -6,7 +6,7 @@ import (
 	"math/rand/v2"
 	"testing"
 
-	"go-mediatoolkit/libraries/mp3/internal/nativemp3"
+	"github.com/daniel-sullivan/go-mediatoolkit/libraries/mp3/internal/nativemp3"
 )
 
 // Representative benchmark input: a fixed pseudo-random byte run standing in

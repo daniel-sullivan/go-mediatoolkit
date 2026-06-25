@@ -25,7 +25,7 @@ import (
 	"fmt"
 	"sync"
 
-	"go-mediatoolkit/video"
+	"github.com/daniel-sullivan/go-mediatoolkit/video"
 )
 
 // renderNodePath is the headless DRM render node the backend opens. It is

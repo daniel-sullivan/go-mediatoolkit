@@ -1,6 +1,6 @@
 package hwaccel
 
-import "go-mediatoolkit/video"
+import "github.com/daniel-sullivan/go-mediatoolkit/video"
 
 // Capabilities is the result of a backend's Probe: the precise set of
 // codecs it can encode and/or decode on the current host, including the

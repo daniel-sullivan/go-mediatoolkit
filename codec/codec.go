@@ -10,7 +10,7 @@ package codec
 import (
 	"io"
 
-	"go-mediatoolkit/mutations"
+	"github.com/daniel-sullivan/go-mediatoolkit/mutations"
 )
 
 // Decoder reads interleaved float64 samples from an encoded source.

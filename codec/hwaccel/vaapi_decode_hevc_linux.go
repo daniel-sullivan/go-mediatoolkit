@@ -12,7 +12,7 @@ package hwaccel
 import (
 	"unsafe"
 
-	"go-mediatoolkit/video"
+	"github.com/daniel-sullivan/go-mediatoolkit/video"
 )
 
 // HEVC NAL unit types ((nal[0] >> 1) & 0x3f).

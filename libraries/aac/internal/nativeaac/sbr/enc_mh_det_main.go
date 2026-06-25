@@ -6,7 +6,7 @@
 // SbrMissingHarmonicsDetectorQmf entry point and InitSbrMissingHarmonicsDetector.
 package sbr
 
-import "go-mediatoolkit/libraries/aac/internal/nativeaac"
+import "github.com/daniel-sullivan/go-mediatoolkit/libraries/aac/internal/nativeaac"
 
 // transientCleanUp is the 1:1 port of transientCleanUp (mh_det.cpp:527-643).
 func transientCleanUp(quotaBuffer [][]int32, nSfb int, detectionVectors [][]uint8, pAddHarmSfb, pPrevAddHarmSfb []uint8, signBuffer [][]int32, pFreqBandTable []uint8, start, stop, newDetectionAllowed int, pNrgVector []int32, mhThresh ThresHolds) {

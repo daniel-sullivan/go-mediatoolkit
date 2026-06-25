@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"go-mediatoolkit/events"
+	"github.com/daniel-sullivan/go-mediatoolkit/events"
 )
 
 // defaultPollInterval is how often the polling fallback asks the

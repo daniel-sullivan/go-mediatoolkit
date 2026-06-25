@@ -8,7 +8,7 @@
 // only. fdk-aac SBR is FIXED-POINT — byte-identical bitstream.
 package sbr
 
-import "go-mediatoolkit/libraries/aac/internal/nativeaac"
+import "github.com/daniel-sullivan/go-mediatoolkit/libraries/aac/internal/nativeaac"
 
 // SbrEncoderInit is the 1:1 port of sbrEncoder_Init (sbr_encoder.cpp:2065-2381)
 // fused with the single-element allocation that sbrEncoder_Open performs, for

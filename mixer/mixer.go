@@ -48,10 +48,10 @@ import (
 
 	hpt "github.com/daniel-sullivan/go-hpt"
 
-	"go-mediatoolkit/buffers"
-	"go-mediatoolkit/events"
-	"go-mediatoolkit/mutations"
-	"go-mediatoolkit/timeline"
+	"github.com/daniel-sullivan/go-mediatoolkit/buffers"
+	"github.com/daniel-sullivan/go-mediatoolkit/events"
+	"github.com/daniel-sullivan/go-mediatoolkit/mutations"
+	"github.com/daniel-sullivan/go-mediatoolkit/timeline"
 )
 
 // Config configures a Mixer. SampleRate and Channels are required;

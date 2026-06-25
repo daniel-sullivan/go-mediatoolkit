@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	mp3lib "go-mediatoolkit/libraries/mp3"
-	"go-mediatoolkit/mutations"
+	mp3lib "github.com/daniel-sullivan/go-mediatoolkit/libraries/mp3"
+	"github.com/daniel-sullivan/go-mediatoolkit/mutations"
 )
 
 // generateSine builds interleaved float64 samples in [-0.8, 0.8] at freq Hz.

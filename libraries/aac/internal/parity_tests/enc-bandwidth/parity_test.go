@@ -9,7 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"go-mediatoolkit/libraries/aac/internal/nativeaac"
+	"github.com/daniel-sullivan/go-mediatoolkit/libraries/aac/internal/nativeaac"
 )
 
 // AACENC_BITRATE_MODE values (aacenc.h:191-199).

@@ -9,7 +9,7 @@ package benchcmp
 // parity test.
 
 import (
-	"go-mediatoolkit/libraries/opus/internal/nativeopus"
+	"github.com/daniel-sullivan/go-mediatoolkit/libraries/opus/internal/nativeopus"
 )
 
 // Encoder is a minimal common surface over the opus encode APIs.

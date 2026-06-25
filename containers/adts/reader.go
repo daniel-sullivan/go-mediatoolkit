@@ -4,9 +4,9 @@ import (
 	"bufio"
 	"io"
 
-	"go-mediatoolkit/containers"
-	aaclib "go-mediatoolkit/libraries/aac"
-	"go-mediatoolkit/mutations"
+	"github.com/daniel-sullivan/go-mediatoolkit/containers"
+	aaclib "github.com/daniel-sullivan/go-mediatoolkit/libraries/aac"
+	"github.com/daniel-sullivan/go-mediatoolkit/mutations"
 )
 
 // maxResyncScan bounds how many bytes the Reader will skip looking for the
@@ -24,7 +24,7 @@ const maxResyncScan = 1 << 16
 //
 // ReadPacket yields the raw AAC access unit of each frame (the header and
 // optional CRC stripped), making the Reader a
-// [go-mediatoolkit/codec/aac.PacketReader]: feed [Reader.ASC] and the Reader
+// [github.com/daniel-sullivan/go-mediatoolkit/codec/aac.PacketReader]: feed [Reader.ASC] and the Reader
 // itself straight into codec/aac.NewDecoder. On a corrupt or mis-aligned
 // stream it resyncs by scanning forward to the next plausible syncword.
 type Reader struct {
@@ -73,13 +73,13 @@ func (r *Reader) Header() Header {
 }
 
 // ASC returns the [aaclib.AudioSpecificConfig] derived from the first frame
-// header, ready to pass to [go-mediatoolkit/codec/aac.NewDecoder].
+// header, ready to pass to [github.com/daniel-sullivan/go-mediatoolkit/codec/aac.NewDecoder].
 func (r *Reader) ASC() aaclib.AudioSpecificConfig { return r.asc }
 
 // ReadPacket returns the next AAC access unit (header + optional CRC
 // stripped). It resyncs past garbage to the next syncword when necessary, and
 // returns io.EOF when the stream is exhausted. Reader implements
-// [go-mediatoolkit/codec/aac.PacketReader].
+// [github.com/daniel-sullivan/go-mediatoolkit/codec/aac.PacketReader].
 func (r *Reader) ReadPacket() ([]byte, error) {
 	if r.eof {
 		return nil, io.EOF
@@ -188,7 +188,7 @@ func (r *Reader) peekHeader() (FrameHeader, error) {
 
 // AccessUnits drains the Reader and returns every remaining AAC access unit.
 // It is a convenience for callers that want all packets up front (e.g. to
-// feed [go-mediatoolkit/codec/aac.NewSlicePacketReader]); it consumes the
+// feed [github.com/daniel-sullivan/go-mediatoolkit/codec/aac.NewSlicePacketReader]); it consumes the
 // stream.
 func (r *Reader) AccessUnits() ([][]byte, error) {
 	var aus [][]byte

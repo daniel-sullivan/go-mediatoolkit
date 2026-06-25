@@ -7,9 +7,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go-mediatoolkit/consts"
+	"github.com/daniel-sullivan/go-mediatoolkit/consts"
 
-	"go-mediatoolkit/mutations"
+	"github.com/daniel-sullivan/go-mediatoolkit/mutations"
 )
 
 // sineAmplitude feeds a sine wave of the given frequency through the

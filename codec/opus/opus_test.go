@@ -5,11 +5,11 @@ import (
 	"math"
 	"testing"
 
-	"go-mediatoolkit/codec"
+	"github.com/daniel-sullivan/go-mediatoolkit/codec"
 
-	"go-mediatoolkit/consts"
-	opuslib "go-mediatoolkit/libraries/opus"
-	"go-mediatoolkit/mutations"
+	"github.com/daniel-sullivan/go-mediatoolkit/consts"
+	opuslib "github.com/daniel-sullivan/go-mediatoolkit/libraries/opus"
+	"github.com/daniel-sullivan/go-mediatoolkit/mutations"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

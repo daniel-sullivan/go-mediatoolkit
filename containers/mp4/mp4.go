@@ -33,8 +33,8 @@
 //     projected onto [containers.StandardTags].
 //
 // A [Reader] parses the box tree and exposes the AAC access units as a
-// [go-mediatoolkit/codec/aac.PacketReader], so callers can pipe them
-// straight into [go-mediatoolkit/codec/aac.NewDecoder] together with the
+// [github.com/daniel-sullivan/go-mediatoolkit/codec/aac.PacketReader], so callers can pipe them
+// straight into [github.com/daniel-sullivan/go-mediatoolkit/codec/aac.NewDecoder] together with the
 // parsed AudioSpecificConfig. The codec layer owns the bitstream; this
 // container layer adds no C and re-frames nothing — it only locates and
 // hands out the existing access units.
@@ -46,7 +46,7 @@
 // A Reader is not safe for concurrent use.
 package mp4
 
-import "go-mediatoolkit/containers"
+import "github.com/daniel-sullivan/go-mediatoolkit/containers"
 
 // Header is the container [containers.Header] specialised to MP4 [Extras].
 type Header = containers.Header[Extras]

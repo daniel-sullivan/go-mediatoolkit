@@ -22,7 +22,7 @@
 // byte-stream framing — access units may be carried in ADTS, LATM/LOAS,
 // or an ISOBMFF/MP4 sample table — this library works on individual
 // packets. Framing is the container layer's concern (see
-// [go-mediatoolkit/containers/mp4]).
+// [github.com/daniel-sullivan/go-mediatoolkit/containers/mp4]).
 //
 // A [Decoder] takes one AAC access unit ([]byte) and produces interleaved
 // float64 PCM. An [Encoder] takes interleaved float64 PCM (exactly one
@@ -130,7 +130,7 @@ func (a AudioObjectType) String() string {
 // AudioSpecificConfig is the MPEG-4 AudioSpecificConfig (ASC) — the
 // out-of-band decoder-configuration record that precedes the AAC access
 // units in a container (carried in the MP4 esds box, see
-// [go-mediatoolkit/containers/mp4]). It tells the decoder the profile,
+// [github.com/daniel-sullivan/go-mediatoolkit/containers/mp4]). It tells the decoder the profile,
 // sample rate, and channel layout needed to interpret the packets.
 //
 // The raw ASC bytes are preserved verbatim so the container layer can copy
@@ -160,7 +160,7 @@ type AudioSpecificConfig struct {
 
 // StreamInfo summarises the stream-level parameters a decoder reports and
 // an encoder is configured with. It is the AAC analogue of
-// [go-mediatoolkit/libraries/flac.StreamInfo].
+// [github.com/daniel-sullivan/go-mediatoolkit/libraries/flac.StreamInfo].
 type StreamInfo struct {
 	// Config is the AudioSpecificConfig describing the stream.
 	Config AudioSpecificConfig

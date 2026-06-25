@@ -28,7 +28,7 @@ import (
 	"time"
 	"unsafe"
 
-	"go-mediatoolkit/video"
+	"github.com/daniel-sullivan/go-mediatoolkit/video"
 )
 
 // vaDecoder drives VA-API VLD decode for one stream. The config, context

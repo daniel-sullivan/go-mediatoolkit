@@ -7,7 +7,7 @@ package mp3
 import (
 	"io"
 
-	"go-mediatoolkit/libraries/mp3/internal/nativemp3"
+	"github.com/daniel-sullivan/go-mediatoolkit/libraries/mp3/internal/nativemp3"
 )
 
 // This file is the public-package seam for the pure-Go MP3 encoder, a 1:1

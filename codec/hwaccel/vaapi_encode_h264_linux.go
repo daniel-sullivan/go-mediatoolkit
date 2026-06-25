@@ -11,7 +11,7 @@ package hwaccel
 import (
 	"unsafe"
 
-	"go-mediatoolkit/video"
+	"github.com/daniel-sullivan/go-mediatoolkit/video"
 )
 
 // h264 constants for the authored SPS/PPS.

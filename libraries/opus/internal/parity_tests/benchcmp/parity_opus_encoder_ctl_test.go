@@ -5,7 +5,7 @@ package benchcmp
 import (
 	"testing"
 
-	"go-mediatoolkit/libraries/opus/internal/nativeopus"
+	"github.com/daniel-sullivan/go-mediatoolkit/libraries/opus/internal/nativeopus"
 )
 
 // TestParity_OpusEncoderCtl — opus_encoder_ctl SET/GET parity sweep.

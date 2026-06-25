@@ -5,7 +5,7 @@ import (
 	"io"
 	"testing"
 
-	aaclib "go-mediatoolkit/libraries/aac"
+	aaclib "github.com/daniel-sullivan/go-mediatoolkit/libraries/aac"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

@@ -20,7 +20,7 @@ package sbr
 //   CntLeadingZeros(x) -> nativeaac.CntLeadingZeros (fixnormz_D)
 //   CountLeadingBits(x)-> nativeaac.CountLeadingBits (fixnorm_D)
 
-import "go-mediatoolkit/libraries/aac/internal/nativeaac"
+import "github.com/daniel-sullivan/go-mediatoolkit/libraries/aac/internal/nativeaac"
 
 // dfractBits (DFRACT_BITS, the FIXP_DBL width) is defined in qmf_synthesis.go.
 

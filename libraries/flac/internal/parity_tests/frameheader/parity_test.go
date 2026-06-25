@@ -7,7 +7,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"go-mediatoolkit/libraries/flac/internal/nativeflac"
+	"github.com/daniel-sullivan/go-mediatoolkit/libraries/flac/internal/nativeflac"
 )
 
 // makeFrameHeader synthesises a complete FLAC frame header from

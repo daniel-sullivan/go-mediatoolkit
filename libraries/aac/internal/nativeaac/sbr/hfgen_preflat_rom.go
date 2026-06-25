@@ -13,7 +13,7 @@ package sbr
 // through nativeaac.StcNarrow (the same FX_DBL2FXCONST_SGL macro), so the Go ROM is
 // byte-identical to the genuine C bsd[]. The SCHAR _sf arrays are plain int8.
 
-import "go-mediatoolkit/libraries/aac/internal/nativeaac"
+import "github.com/daniel-sullivan/go-mediatoolkit/libraries/aac/internal/nativeaac"
 
 // getLog2 is getLog2[32] (HFgen_preFlat.cpp:135): trunc(log2(n))+1 for n in 0..31
 // (with getLog2[0]==0).

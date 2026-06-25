@@ -13,10 +13,10 @@ import (
 	"os"
 	"time"
 
-	"go-mediatoolkit/codec/pcm"
-	"go-mediatoolkit/containers/wav"
-	"go-mediatoolkit/devices"
-	"go-mediatoolkit/mutations"
+	"github.com/daniel-sullivan/go-mediatoolkit/codec/pcm"
+	"github.com/daniel-sullivan/go-mediatoolkit/containers/wav"
+	"github.com/daniel-sullivan/go-mediatoolkit/devices"
+	"github.com/daniel-sullivan/go-mediatoolkit/mutations"
 )
 
 func main() {

@@ -12,7 +12,7 @@
 // Scope: HE-AAC v1 only. The low-delay/ELD-specific paths are excluded.
 package sbr
 
-import "go-mediatoolkit/libraries/aac/internal/nativeaac"
+import "github.com/daniel-sullivan/go-mediatoolkit/libraries/aac/internal/nativeaac"
 
 // fMultCE is fMult(FIXP_DBL, FIXP_DBL) == fixmul_DD (common_fix.h:241).
 func fMultCE(a, b int32) int32 { return nativeaac.FMultDD(a, b) }

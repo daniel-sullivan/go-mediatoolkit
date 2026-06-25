@@ -9,7 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"go-mediatoolkit/libraries/aac/internal/nativeaac"
+	"github.com/daniel-sullivan/go-mediatoolkit/libraries/aac/internal/nativeaac"
 )
 
 // fl2 mirrors FL2_TIMERES_FIX(a) == FL2FXCONST_DBL(a / 2) (TNS_TIMERES_SCALE==1),

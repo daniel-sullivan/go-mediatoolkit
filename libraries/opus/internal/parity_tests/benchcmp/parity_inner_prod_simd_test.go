@@ -7,7 +7,7 @@ import (
 	"math/rand"
 	"testing"
 
-	"go-mediatoolkit/libraries/opus/internal/nativeopus"
+	"github.com/daniel-sullivan/go-mediatoolkit/libraries/opus/internal/nativeopus"
 )
 
 // TestParity_CeltInnerProd_SIMDvsScalar cross-checks the arch-aware

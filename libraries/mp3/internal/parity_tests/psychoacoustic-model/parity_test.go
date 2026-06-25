@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go-mediatoolkit/libraries/mp3/internal/nativemp3"
+	"github.com/daniel-sullivan/go-mediatoolkit/libraries/mp3/internal/nativemp3"
 )
 
 // requireStrict skips a parity test unless the mp3_strict build tag is set.

@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"log"
 
-	"go-mediatoolkit/libraries/ogg"
+	"github.com/daniel-sullivan/go-mediatoolkit/libraries/ogg"
 )
 
 func main() {

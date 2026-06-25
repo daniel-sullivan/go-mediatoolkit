@@ -17,9 +17,9 @@ import (
 	"log"
 	"time"
 
-	"go-mediatoolkit/codec/flac"
-	"go-mediatoolkit/consts"
-	"go-mediatoolkit/generators"
+	"github.com/daniel-sullivan/go-mediatoolkit/codec/flac"
+	"github.com/daniel-sullivan/go-mediatoolkit/consts"
+	"github.com/daniel-sullivan/go-mediatoolkit/generators"
 )
 
 // FLAC metadata block types (RFC 9639 §8.1).

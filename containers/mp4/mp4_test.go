@@ -9,9 +9,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	aaccodec "go-mediatoolkit/codec/aac"
-	"go-mediatoolkit/containers"
-	aaclib "go-mediatoolkit/libraries/aac"
+	aaccodec "github.com/daniel-sullivan/go-mediatoolkit/codec/aac"
+	"github.com/daniel-sullivan/go-mediatoolkit/containers"
+	aaclib "github.com/daniel-sullivan/go-mediatoolkit/libraries/aac"
 )
 
 // The Reader's PacketReader must satisfy both the codec/aac and the generic

@@ -53,7 +53,7 @@ The parity gate, oracle CGO flags, and benchmarks all live in `libraries/opus`; 
 ### Decoding
 
 ```go
-import opuscodec "go-mediatoolkit/codec/opus"
+import opuscodec "github.com/daniel-sullivan/go-mediatoolkit/codec/opus"
 
 // pr is any PacketReader — e.g. containers/ogg's OpusReader, or
 // opuscodec.NewSlicePacketReader(packets) over an in-memory slice.
@@ -88,7 +88,7 @@ err = enc.Close()      // flushes the final (silence-padded) frame; pw is not cl
 ### With a container (`.opus` / Ogg)
 
 ```go
-import "go-mediatoolkit/containers/ogg"
+import "github.com/daniel-sullivan/go-mediatoolkit/containers/ogg"
 
 rd, err := ogg.NewOpusReader(r)            // parses OpusHead / OpusTags, demuxes pages
 dec, err := opuscodec.NewDecoder(rd, rd.Header().SampleRate, rd.Header().Channels)

@@ -31,8 +31,8 @@ import (
 	"testing"
 	"time"
 
-	"go-mediatoolkit/generators"
-	"go-mediatoolkit/libraries/aac/internal/nativeaac"
+	"github.com/daniel-sullivan/go-mediatoolkit/generators"
+	"github.com/daniel-sullivan/go-mediatoolkit/libraries/aac/internal/nativeaac"
 
 	"github.com/stretchr/testify/require"
 )

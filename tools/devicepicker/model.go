@@ -7,7 +7,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
-	"go-mediatoolkit/devices"
+	"github.com/daniel-sullivan/go-mediatoolkit/devices"
 )
 
 type stage int

@@ -7,8 +7,8 @@ import (
 	"io"
 	"math/rand/v2"
 
-	"go-mediatoolkit/containers"
-	"go-mediatoolkit/mutations"
+	"github.com/daniel-sullivan/go-mediatoolkit/containers"
+	"github.com/daniel-sullivan/go-mediatoolkit/mutations"
 )
 
 // OpusHead is the identification header from an Opus-in-Ogg stream
@@ -53,7 +53,7 @@ type OpusReader struct {
 // OpusReader ready to supply audio packets.
 //
 // The returned [OpusReader] implements [containers.PacketReader] so it can
-// be passed directly to [go-mediatoolkit/codec/opus.NewDecoder] (the
+// be passed directly to [github.com/daniel-sullivan/go-mediatoolkit/codec/opus.NewDecoder] (the
 // [codec/opus.PacketReader] interface is structurally compatible).
 func NewOpusReader(r io.Reader) (*OpusReader, error) {
 	oreader, err := NewReader(r)

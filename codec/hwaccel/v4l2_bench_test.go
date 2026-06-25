@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	"go-mediatoolkit/video"
+	"github.com/daniel-sullivan/go-mediatoolkit/video"
 )
 
 // BenchmarkV4L2StatelessHEVCDecode measures the Raspberry Pi 5 stateless

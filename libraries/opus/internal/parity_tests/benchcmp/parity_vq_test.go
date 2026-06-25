@@ -8,7 +8,7 @@ import (
 	"math/rand"
 	"testing"
 
-	"go-mediatoolkit/libraries/opus/internal/nativeopus"
+	"github.com/daniel-sullivan/go-mediatoolkit/libraries/opus/internal/nativeopus"
 )
 
 // ulpDiffF32 — magnitude of ULP gap between two float32s (for error

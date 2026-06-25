@@ -1,6 +1,6 @@
 package bitreader
 
-import "go-mediatoolkit/libraries/flac/internal/nativeflac"
+import "github.com/daniel-sullivan/go-mediatoolkit/libraries/flac/internal/nativeflac"
 
 // nativeBitReader wraps the Go port in the same minimal interface
 // the cgo wrapper exposes, so the differential tests can iterate

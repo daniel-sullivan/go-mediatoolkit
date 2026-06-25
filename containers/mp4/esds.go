@@ -1,6 +1,6 @@
 package mp4
 
-import aaclib "go-mediatoolkit/libraries/aac"
+import aaclib "github.com/daniel-sullivan/go-mediatoolkit/libraries/aac"
 
 // MPEG-4 descriptor tags carried inside the esds box (ISO/IEC 14496-1).
 const (

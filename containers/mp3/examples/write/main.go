@@ -19,11 +19,11 @@ import (
 	"log"
 	"time"
 
-	"go-mediatoolkit/consts"
-	"go-mediatoolkit/containers"
-	ctrmp3 "go-mediatoolkit/containers/mp3"
-	"go-mediatoolkit/generators"
-	mp3lib "go-mediatoolkit/libraries/mp3"
+	"github.com/daniel-sullivan/go-mediatoolkit/consts"
+	"github.com/daniel-sullivan/go-mediatoolkit/containers"
+	ctrmp3 "github.com/daniel-sullivan/go-mediatoolkit/containers/mp3"
+	"github.com/daniel-sullivan/go-mediatoolkit/generators"
+	mp3lib "github.com/daniel-sullivan/go-mediatoolkit/libraries/mp3"
 )
 
 func main() {

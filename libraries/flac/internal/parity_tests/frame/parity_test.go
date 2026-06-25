@@ -8,7 +8,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"go-mediatoolkit/libraries/flac/internal/nativeflac"
+	"github.com/daniel-sullivan/go-mediatoolkit/libraries/flac/internal/nativeflac"
 )
 
 // goDecodeFrame drives the Go ReadFrame port over a fabricated frame

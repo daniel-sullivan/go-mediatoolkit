@@ -9,7 +9,7 @@
 // detector parameter sets; no ELD-specific tuning).
 package sbr
 
-import "go-mediatoolkit/libraries/aac/internal/nativeaac"
+import "github.com/daniel-sullivan/go-mediatoolkit/libraries/aac/internal/nativeaac"
 
 const (
 	maxNumRegions  = 5 // MAX_NUM_REGIONS (invf_est.h)

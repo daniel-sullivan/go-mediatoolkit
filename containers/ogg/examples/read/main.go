@@ -13,8 +13,8 @@ import (
 	"slices"
 	"strings"
 
-	"go-mediatoolkit/codec/opus"
-	"go-mediatoolkit/containers/ogg"
+	"github.com/daniel-sullivan/go-mediatoolkit/codec/opus"
+	"github.com/daniel-sullivan/go-mediatoolkit/containers/ogg"
 )
 
 func main() {

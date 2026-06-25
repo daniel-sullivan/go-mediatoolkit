@@ -7,7 +7,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"go-mediatoolkit/libraries/flac/internal/nativeflac"
+	"github.com/daniel-sullivan/go-mediatoolkit/libraries/flac/internal/nativeflac"
 )
 
 // runWithSource builds a Go BitReader over body and invokes f, then

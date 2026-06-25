@@ -7,7 +7,7 @@ import (
 	"sort"
 	"testing"
 
-	"go-mediatoolkit/libraries/opus/internal/nativeopus"
+	"github.com/daniel-sullivan/go-mediatoolkit/libraries/opus/internal/nativeopus"
 )
 
 // monotoneNLSF returns a vector of sorted, strictly-increasing int16

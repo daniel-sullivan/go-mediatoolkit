@@ -25,7 +25,7 @@ package sbr
 //   f2Pow(m,e,&re)    -> nativeaac.F2Pow    (returns mantissa + exponent)
 //   FX_CHB2FX_DBL(a)  -> FX_SGL2FX_DBL(a) == int32(a) << 16
 
-import "go-mediatoolkit/libraries/aac/internal/nativeaac"
+import "github.com/daniel-sullivan/go-mediatoolkit/libraries/aac/internal/nativeaac"
 
 // HFgen pre-flattening constants (HFgen_preFlat.cpp:108-143).
 const (

@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go-mediatoolkit/containers"
-	flaclib "go-mediatoolkit/libraries/flac"
+	"github.com/daniel-sullivan/go-mediatoolkit/containers"
+	flaclib "github.com/daniel-sullivan/go-mediatoolkit/libraries/flac"
 )
 
 func generateFLACTone(t *testing.T, sampleRate, channels, bits, samplesPerChannel int, freq float64) []int32 {

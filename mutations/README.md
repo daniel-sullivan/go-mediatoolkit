@@ -105,7 +105,7 @@ two biquads in one chain for a steeper (≈ 4th-order) slope.
 ### Decibels → linear gain
 
 ```go
-import "go-mediatoolkit/mutations"
+import "github.com/daniel-sullivan/go-mediatoolkit/mutations"
 
 // Attenuate a buffer by 6 dB. Decibels() uses the 20·log10 amplitude
 // convention: -6 dB → ≈0.501, so the peak roughly halves.

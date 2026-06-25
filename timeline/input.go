@@ -5,7 +5,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"go-mediatoolkit/buffers"
+	"github.com/daniel-sullivan/go-mediatoolkit/buffers"
 )
 
 // InputSource is a Source whose samples arrive in real time from an

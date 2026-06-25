@@ -3,8 +3,8 @@ package generators
 import (
 	"time"
 
-	"go-mediatoolkit/consts"
-	"go-mediatoolkit/mutations"
+	"github.com/daniel-sullivan/go-mediatoolkit/consts"
+	"github.com/daniel-sullivan/go-mediatoolkit/mutations"
 )
 
 // MelodyNote is one entry in a Melody sequence. Freq <= 0 marks a rest

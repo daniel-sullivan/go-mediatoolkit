@@ -1,6 +1,6 @@
 package bitwriter
 
-import "go-mediatoolkit/libraries/flac/internal/nativeflac"
+import "github.com/daniel-sullivan/go-mediatoolkit/libraries/flac/internal/nativeflac"
 
 // nativeBitWriter wraps the Go port in the same minimal interface the
 // cgo wrapper exposes, so the differential tests can drive both

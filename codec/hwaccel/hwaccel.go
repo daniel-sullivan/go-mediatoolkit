@@ -37,7 +37,7 @@ package hwaccel
 import (
 	"sync"
 
-	"go-mediatoolkit/video"
+	"github.com/daniel-sullivan/go-mediatoolkit/video"
 )
 
 // Encoder consumes raw frames and produces encoded packets. Hardware

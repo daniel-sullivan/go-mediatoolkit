@@ -8,10 +8,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go-mediatoolkit/consts"
+	"github.com/daniel-sullivan/go-mediatoolkit/consts"
 
-	"go-mediatoolkit/mutations"
-	"go-mediatoolkit/timeline"
+	"github.com/daniel-sullivan/go-mediatoolkit/mutations"
+	"github.com/daniel-sullivan/go-mediatoolkit/timeline"
 )
 
 // drainWithTimeout pulls from the mixer until buf is full or timeout

@@ -8,7 +8,7 @@
 // fdk-aac SBR is FIXED-POINT — EXACT integer parity. Scope: HE-AAC v1.
 package sbr
 
-import "go-mediatoolkit/libraries/aac/internal/nativeaac"
+import "github.com/daniel-sullivan/go-mediatoolkit/libraries/aac/internal/nativeaac"
 
 const (
 	maxNumNoiseCoeffs       = 5 // MAX_NUM_NOISE_COEFFS (sbr_def.h)

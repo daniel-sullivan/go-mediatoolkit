@@ -13,7 +13,7 @@ package sbr
 // HF-gen batch consumes are duplicated here, to be reconciled when the SBR-ROM
 // batch lands.)
 
-import "go-mediatoolkit/libraries/aac/internal/nativeaac"
+import "github.com/daniel-sullivan/go-mediatoolkit/libraries/aac/internal/nativeaac"
 
 // numWhFactorTableEntries is NUM_WHFACTOR_TABLE_ENTRIES (sbr_rom.h:139).
 const numWhFactorTableEntries = 9

@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go-mediatoolkit/events"
+	"github.com/daniel-sullivan/go-mediatoolkit/events"
 )
 
 func TestBus_PublishDeliversToSubscriber(t *testing.T) {

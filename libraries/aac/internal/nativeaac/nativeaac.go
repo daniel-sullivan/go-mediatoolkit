@@ -3,7 +3,7 @@
 
 // Package nativeaac is the pure-Go 1:1 port of the vendored Fraunhofer
 // FDK-AAC reference (libraries/aac/libfdk), used by
-// [go-mediatoolkit/libraries/aac] when cgo is disabled or when the native
+// [github.com/daniel-sullivan/go-mediatoolkit/libraries/aac] when cgo is disabled or when the native
 // path is requested explicitly via NewNativeDecoder / NewNativeEncoder.
 //
 // FDK-AAC is the only AAC engine, so this entire port is derived from it and

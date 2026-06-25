@@ -71,8 +71,8 @@ the audio packets through a [`containers.PacketReader`]:
 
 ```go
 import (
-    "go-mediatoolkit/codec/opus"
-    "go-mediatoolkit/containers/ogg"
+    "github.com/daniel-sullivan/go-mediatoolkit/codec/opus"
+    "github.com/daniel-sullivan/go-mediatoolkit/containers/ogg"
 )
 
 rd, err := ogg.NewOpusReader(r)              // parses OpusHead + OpusTags

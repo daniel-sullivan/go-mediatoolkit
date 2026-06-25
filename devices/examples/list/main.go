@@ -7,7 +7,7 @@ import (
 	"log"
 	"sort"
 
-	"go-mediatoolkit/devices"
+	"github.com/daniel-sullivan/go-mediatoolkit/devices"
 )
 
 func main() {

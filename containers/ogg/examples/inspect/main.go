@@ -18,7 +18,7 @@ import (
 	"log"
 	"os"
 
-	"go-mediatoolkit/containers/ogg"
+	"github.com/daniel-sullivan/go-mediatoolkit/containers/ogg"
 )
 
 func main() {

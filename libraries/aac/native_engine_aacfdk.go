@@ -10,8 +10,8 @@ package aac
 // always-available nativeDecodeEngine interface (native_stub.go) to that port.
 
 import (
-	"go-mediatoolkit/libraries/aac/internal/nativeaac"
-	"go-mediatoolkit/libraries/aac/internal/nativeaac/heaac"
+	"github.com/daniel-sullivan/go-mediatoolkit/libraries/aac/internal/nativeaac"
+	"github.com/daniel-sullivan/go-mediatoolkit/libraries/aac/internal/nativeaac/heaac"
 )
 
 // newNativeDecodeEngine constructs the internal/nativeaac AAC-LC decode core.

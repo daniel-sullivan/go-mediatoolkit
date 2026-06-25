@@ -61,8 +61,8 @@ for code where the specific octave does not matter.
 ## Usage
 
 ```go
-import "go-mediatoolkit/consts"
-import "go-mediatoolkit/generators"
+import "github.com/daniel-sullivan/go-mediatoolkit/consts"
+import "github.com/daniel-sullivan/go-mediatoolkit/generators"
 
 // A 2-second A4 tone at 48 kHz, no magic numbers at the call site.
 tone := generators.Sine(consts.FreqNoteA4, 2*time.Second, consts.SampleRate48000)

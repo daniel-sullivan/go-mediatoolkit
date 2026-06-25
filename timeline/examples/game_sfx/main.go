@@ -23,13 +23,13 @@ import (
 	"syscall"
 	"time"
 
-	"go-mediatoolkit/consts"
-	"go-mediatoolkit/devices"
-	"go-mediatoolkit/generators"
-	"go-mediatoolkit/mixer"
-	"go-mediatoolkit/timeline"
-	"go-mediatoolkit/tools/audioio"
-	"go-mediatoolkit/tools/devicepicker"
+	"github.com/daniel-sullivan/go-mediatoolkit/consts"
+	"github.com/daniel-sullivan/go-mediatoolkit/devices"
+	"github.com/daniel-sullivan/go-mediatoolkit/generators"
+	"github.com/daniel-sullivan/go-mediatoolkit/mixer"
+	"github.com/daniel-sullivan/go-mediatoolkit/timeline"
+	"github.com/daniel-sullivan/go-mediatoolkit/tools/audioio"
+	"github.com/daniel-sullivan/go-mediatoolkit/tools/devicepicker"
 )
 
 const (

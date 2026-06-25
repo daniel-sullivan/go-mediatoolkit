@@ -4,7 +4,7 @@ import (
 	"io"
 	"time"
 
-	"go-mediatoolkit/mutations"
+	"github.com/daniel-sullivan/go-mediatoolkit/mutations"
 )
 
 // Repeat wraps a Source factory into a Source that loops forever.

@@ -83,8 +83,8 @@ MP4 parsing is **random-access**, not streaming: chunk offsets in `stco`/`co64` 
 
 ```go
 import (
-    "go-mediatoolkit/containers/mp4"
-    aaccodec "go-mediatoolkit/codec/aac"
+    "github.com/daniel-sullivan/go-mediatoolkit/containers/mp4"
+    aaccodec "github.com/daniel-sullivan/go-mediatoolkit/codec/aac"
 )
 
 rd, err := mp4.NewReader(r)        // parses the ISOBMFF box tree; buffers the file

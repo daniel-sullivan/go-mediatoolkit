@@ -15,7 +15,7 @@ import (
 	"syscall"
 	"time"
 
-	"go-mediatoolkit/devices"
+	"github.com/daniel-sullivan/go-mediatoolkit/devices"
 )
 
 func main() {

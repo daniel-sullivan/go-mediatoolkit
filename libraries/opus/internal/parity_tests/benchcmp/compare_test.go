@@ -7,7 +7,7 @@ import (
 	"math"
 	"testing"
 
-	opus "go-mediatoolkit/libraries/opus"
+	opus "github.com/daniel-sullivan/go-mediatoolkit/libraries/opus"
 )
 
 // This file contains Cgo-backed oracle tests — they compare opus.NewDecoder/

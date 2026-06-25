@@ -8,7 +8,7 @@ import (
 	"sync"
 	"testing"
 
-	"go-mediatoolkit/libraries/aac/internal/nativeaac"
+	"github.com/daniel-sullivan/go-mediatoolkit/libraries/aac/internal/nativeaac"
 )
 
 // Representative benchmark signal: 1 second, 44100 Hz, 2 channels, interleaved

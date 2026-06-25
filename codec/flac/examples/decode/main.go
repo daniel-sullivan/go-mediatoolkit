@@ -19,9 +19,9 @@ import (
 	"math"
 	"time"
 
-	"go-mediatoolkit/codec/flac"
-	"go-mediatoolkit/consts"
-	"go-mediatoolkit/generators"
+	"github.com/daniel-sullivan/go-mediatoolkit/codec/flac"
+	"github.com/daniel-sullivan/go-mediatoolkit/consts"
+	"github.com/daniel-sullivan/go-mediatoolkit/generators"
 )
 
 func main() {

@@ -4,7 +4,7 @@
 
 package vbrpsymg
 
-import "go-mediatoolkit/libraries/mp3/internal/nativemp3"
+import "github.com/daniel-sullivan/go-mediatoolkit/libraries/mp3/internal/nativemp3"
 
 // native.go drives the pure-Go nativemp3.L3psychoAnalVbr the same way the C
 // oracle drives the genuine static L3psycho_anal_vbr: build a -V2 EncoderContext

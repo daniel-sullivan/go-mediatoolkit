@@ -16,10 +16,10 @@ Sinc converters automatically parallelize across available CPUs when processing 
 
 ## Install
 
-Part of the `go-mediatoolkit` module — import it as `go-mediatoolkit/resample`; it is not separately `go get`-able (the module has no domain path).
+Part of the `github.com/daniel-sullivan/go-mediatoolkit` module — import it as `github.com/daniel-sullivan/go-mediatoolkit/resample`.
 
 ```go
-import "go-mediatoolkit/resample"
+import "github.com/daniel-sullivan/go-mediatoolkit/resample"
 ```
 
 ## Quick start

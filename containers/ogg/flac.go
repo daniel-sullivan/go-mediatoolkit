@@ -6,9 +6,9 @@ import (
 	"io"
 	"math/rand/v2"
 
-	"go-mediatoolkit/containers"
-	flaclib "go-mediatoolkit/libraries/flac"
-	"go-mediatoolkit/mutations"
+	"github.com/daniel-sullivan/go-mediatoolkit/containers"
+	flaclib "github.com/daniel-sullivan/go-mediatoolkit/libraries/flac"
+	"github.com/daniel-sullivan/go-mediatoolkit/mutations"
 )
 
 // FLACHead mirrors the Ogg-FLAC ID header (xiph "Ogg encapsulation for
@@ -81,7 +81,7 @@ type FLACHeader = containers.Header[FLACExtras]
 // metadata packets, then yields the audio frames as a single
 // continuous byte stream that re-prepends the native "fLaC" magic and
 // metadata blocks. Pass [FLACReader.Data] to
-// [go-mediatoolkit/libraries/flac.NewDecoder] to decode samples.
+// [github.com/daniel-sullivan/go-mediatoolkit/libraries/flac.NewDecoder] to decode samples.
 type FLACReader struct {
 	ogg    *Reader
 	stream *Stream
@@ -189,7 +189,7 @@ func (r *FLACReader) Header() FLACHeader { return r.header }
 // Data returns an io.Reader yielding a synthetic native FLAC byte
 // stream — magic + metadata blocks (with is_last properly stamped) +
 // audio frames concatenated. Hand it to
-// [go-mediatoolkit/libraries/flac.NewDecoder] to decode samples.
+// [github.com/daniel-sullivan/go-mediatoolkit/libraries/flac.NewDecoder] to decode samples.
 func (r *FLACReader) Data() io.Reader { return r.data }
 
 // flacFrameStream concatenates the raw bytes of each subsequent Ogg

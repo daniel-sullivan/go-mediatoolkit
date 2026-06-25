@@ -20,8 +20,8 @@ import (
 	"math"
 	"os"
 
-	"go-mediatoolkit/codec/mp3"
-	ctrmp3 "go-mediatoolkit/containers/mp3"
+	"github.com/daniel-sullivan/go-mediatoolkit/codec/mp3"
+	ctrmp3 "github.com/daniel-sullivan/go-mediatoolkit/containers/mp3"
 )
 
 func main() {

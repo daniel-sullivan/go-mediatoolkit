@@ -6,7 +6,7 @@
 // Following the FLAC archetype, the [Decoder] reads raw MP3 frames from a
 // single continuous [io.Reader] and the [Encoder] writes raw MP3 frames to a
 // single continuous [io.Writer] — no separate framing layer is required at
-// this level. Use [go-mediatoolkit/containers/mp3] for ID3 metadata
+// this level. Use [github.com/daniel-sullivan/go-mediatoolkit/containers/mp3] for ID3 metadata
 // inspection and tag projection on top of the raw stream.
 //
 // Samples are normalized to [-1.0, 1.0] by dividing integer samples by
@@ -19,8 +19,8 @@ package mp3
 import (
 	"io"
 
-	"go-mediatoolkit/codec"
-	mp3lib "go-mediatoolkit/libraries/mp3"
+	"github.com/daniel-sullivan/go-mediatoolkit/codec"
+	mp3lib "github.com/daniel-sullivan/go-mediatoolkit/libraries/mp3"
 )
 
 // DecoderOption configures a [Decoder].

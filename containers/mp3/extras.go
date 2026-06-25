@@ -1,6 +1,6 @@
 package mp3
 
-import mp3lib "go-mediatoolkit/libraries/mp3"
+import mp3lib "github.com/daniel-sullivan/go-mediatoolkit/libraries/mp3"
 
 // Extras carries MP3/ID3-specific metadata that does not fit the uniform
 // [containers.Header] view.

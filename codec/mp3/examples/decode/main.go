@@ -14,8 +14,8 @@ import (
 	"log"
 	"os"
 
-	codecmp3 "go-mediatoolkit/codec/mp3"
-	mp3lib "go-mediatoolkit/libraries/mp3"
+	codecmp3 "github.com/daniel-sullivan/go-mediatoolkit/codec/mp3"
+	mp3lib "github.com/daniel-sullivan/go-mediatoolkit/libraries/mp3"
 )
 
 func main() {

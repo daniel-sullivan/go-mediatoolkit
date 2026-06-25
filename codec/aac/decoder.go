@@ -3,8 +3,8 @@ package aac
 import (
 	"io"
 
-	aaclib "go-mediatoolkit/libraries/aac"
-	"go-mediatoolkit/mutations"
+	aaclib "github.com/daniel-sullivan/go-mediatoolkit/libraries/aac"
+	"github.com/daniel-sullivan/go-mediatoolkit/mutations"
 )
 
 // decoder is the streaming [codec.Decoder] adapter over a
