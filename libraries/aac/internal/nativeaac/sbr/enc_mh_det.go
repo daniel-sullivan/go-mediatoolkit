@@ -22,7 +22,7 @@
 // allocation in the detector state — RAM pooling is not part of the algorithm.
 package sbr
 
-import "go-mediatoolkit/libraries/aac/internal/nativeaac"
+import "github.com/daniel-sullivan/go-mediatoolkit/libraries/aac/internal/nativeaac"
 
 // SFM_SHIFT / SFM_SCALE (mh_det.cpp:110-111).
 const (

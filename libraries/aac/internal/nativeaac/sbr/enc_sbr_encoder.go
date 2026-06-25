@@ -34,7 +34,7 @@
 // FIXED-POINT — byte-identical bitstream.
 package sbr
 
-import "go-mediatoolkit/libraries/aac/internal/nativeaac"
+import "github.com/daniel-sullivan/go-mediatoolkit/libraries/aac/internal/nativeaac"
 
 // Driver constants.
 const (

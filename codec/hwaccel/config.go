@@ -1,6 +1,6 @@
 package hwaccel
 
-import "go-mediatoolkit/video"
+import "github.com/daniel-sullivan/go-mediatoolkit/video"
 
 // Config describes an encoder or decoder to build. It is populated with
 // functional Options passed to NewConfig (or directly to the Open*

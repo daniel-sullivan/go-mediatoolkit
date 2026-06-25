@@ -4,9 +4,9 @@
 // FLAC is byte-stream framed (the magic + metadata blocks + frames live
 // in a single continuous stream), so the [Decoder] takes an [io.Reader]
 // and the [Encoder] takes an [io.Writer] — no separate framing layer
-// is required at this level. Use [go-mediatoolkit/containers/flac] for
+// is required at this level. Use [github.com/daniel-sullivan/go-mediatoolkit/containers/flac] for
 // metadata inspection and tag projection on top of the raw stream, or
-// [go-mediatoolkit/containers/ogg] for Ogg-FLAC encapsulation.
+// [github.com/daniel-sullivan/go-mediatoolkit/containers/ogg] for Ogg-FLAC encapsulation.
 //
 // Float64 samples are normalised to [-1.0, 1.0]: the decoder divides
 // each integer sample by (2^(BitsPerSample-1)-1); the encoder
@@ -19,8 +19,8 @@ package flac
 import (
 	"io"
 
-	"go-mediatoolkit/codec"
-	flaclib "go-mediatoolkit/libraries/flac"
+	"github.com/daniel-sullivan/go-mediatoolkit/codec"
+	flaclib "github.com/daniel-sullivan/go-mediatoolkit/libraries/flac"
 )
 
 // DecoderOption configures a [Decoder].

@@ -4,16 +4,16 @@ import (
 	"bytes"
 	"io"
 
-	"go-mediatoolkit/containers"
-	mp3lib "go-mediatoolkit/libraries/mp3"
-	"go-mediatoolkit/mutations"
+	"github.com/daniel-sullivan/go-mediatoolkit/containers"
+	mp3lib "github.com/daniel-sullivan/go-mediatoolkit/libraries/mp3"
+	"github.com/daniel-sullivan/go-mediatoolkit/mutations"
 )
 
 // Reader parses leading ID3v2 metadata (and a trailing ID3v1 tag when the
 // source is seekable), peeks the first MPEG audio frame header to recover the
 // stream's sample rate and channel count, and exposes a continuous [io.Reader]
 // over the original byte stream so the bytes can be fed to
-// [go-mediatoolkit/libraries/mp3.NewDecoder].
+// [github.com/daniel-sullivan/go-mediatoolkit/libraries/mp3.NewDecoder].
 type Reader struct {
 	header Header
 	data   io.Reader
@@ -316,5 +316,5 @@ func (r *Reader) Header() Header { return r.header }
 
 // Data returns an io.Reader over the entire MP3 stream — ID3v2 prefix, audio
 // frames, and any ID3v1 trailer. Pass it to
-// [go-mediatoolkit/libraries/mp3.NewDecoder] to decode samples.
+// [github.com/daniel-sullivan/go-mediatoolkit/libraries/mp3.NewDecoder] to decode samples.
 func (r *Reader) Data() io.Reader { return r.data }

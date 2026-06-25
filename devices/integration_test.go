@@ -35,7 +35,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go-mediatoolkit/devices"
+	"github.com/daniel-sullivan/go-mediatoolkit/devices"
 )
 
 // hotplugDeadline bounds how long a hotplug test will wait for a single

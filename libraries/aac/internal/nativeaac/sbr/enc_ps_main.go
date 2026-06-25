@@ -18,7 +18,7 @@
 // not transmitted.
 package sbr
 
-import "go-mediatoolkit/libraries/aac/internal/nativeaac"
+import "github.com/daniel-sullivan/go-mediatoolkit/libraries/aac/internal/nativeaac"
 
 // PSENC_NENV / PSENC_STEREO_BANDS config bounds (ps_main.h:115-129).
 const (

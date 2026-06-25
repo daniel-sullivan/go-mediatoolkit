@@ -4,7 +4,7 @@ import (
 	"math"
 	"testing"
 
-	"go-mediatoolkit/mutations"
+	"github.com/daniel-sullivan/go-mediatoolkit/mutations"
 
 	"github.com/stretchr/testify/assert"
 )

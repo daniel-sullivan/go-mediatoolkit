@@ -41,7 +41,7 @@
 // should a later low-power batch need them, but are not wired here.
 package sbr
 
-import "go-mediatoolkit/libraries/aac/internal/nativeaac"
+import "github.com/daniel-sullivan/go-mediatoolkit/libraries/aac/internal/nativeaac"
 
 // QMF algorithmic-scaling constants, 1:1 from qmf.h:156/168 and
 // FDK_tools_rom.h:213.

@@ -16,7 +16,7 @@ package hwaccel
 import (
 	"unsafe"
 
-	"go-mediatoolkit/video"
+	"github.com/daniel-sullivan/go-mediatoolkit/video"
 )
 
 // av1Decoder state carried across OBUs within a temporal unit.

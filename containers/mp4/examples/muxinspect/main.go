@@ -20,11 +20,11 @@ import (
 	"strings"
 	"time"
 
-	"go-mediatoolkit/consts"
-	"go-mediatoolkit/containers"
-	"go-mediatoolkit/containers/mp4"
-	"go-mediatoolkit/generators"
-	aaclib "go-mediatoolkit/libraries/aac"
+	"github.com/daniel-sullivan/go-mediatoolkit/consts"
+	"github.com/daniel-sullivan/go-mediatoolkit/containers"
+	"github.com/daniel-sullivan/go-mediatoolkit/containers/mp4"
+	"github.com/daniel-sullivan/go-mediatoolkit/generators"
+	aaclib "github.com/daniel-sullivan/go-mediatoolkit/libraries/aac"
 )
 
 func main() {

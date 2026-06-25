@@ -1,4 +1,4 @@
-module go-mediatoolkit
+module github.com/daniel-sullivan/go-mediatoolkit
 
 go 1.26
 

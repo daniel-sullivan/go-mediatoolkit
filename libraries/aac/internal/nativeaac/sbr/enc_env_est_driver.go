@@ -21,7 +21,7 @@
 // EXACT integer parity.
 package sbr
 
-import "go-mediatoolkit/libraries/aac/internal/nativeaac"
+import "github.com/daniel-sullivan/go-mediatoolkit/libraries/aac/internal/nativeaac"
 
 // EnvChannel is the 1:1 port of struct ENV_CHANNEL (env_est.h:144-158): the
 // per-channel SBR-encoder envelope state. FastTranDetector is retained for the

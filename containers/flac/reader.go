@@ -5,13 +5,13 @@ import (
 	"io"
 	"time"
 
-	"go-mediatoolkit/containers"
-	"go-mediatoolkit/mutations"
+	"github.com/daniel-sullivan/go-mediatoolkit/containers"
+	"github.com/daniel-sullivan/go-mediatoolkit/mutations"
 )
 
 // Reader parses the metadata chain at the start of a FLAC stream and
 // exposes a continuous [io.Reader] over the original byte stream so the
-// remainder can be fed to [go-mediatoolkit/libraries/flac.NewDecoder].
+// remainder can be fed to [github.com/daniel-sullivan/go-mediatoolkit/libraries/flac.NewDecoder].
 type Reader struct {
 	header Header
 	data   io.Reader
@@ -140,5 +140,5 @@ func (r *Reader) Header() Header { return r.header }
 
 // Data returns an io.Reader over the entire FLAC stream — magic,
 // metadata blocks, and audio frames. Pass it to
-// [go-mediatoolkit/libraries/flac.NewDecoder] to decode samples.
+// [github.com/daniel-sullivan/go-mediatoolkit/libraries/flac.NewDecoder] to decode samples.
 func (r *Reader) Data() io.Reader { return r.data }

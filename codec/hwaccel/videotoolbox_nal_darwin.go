@@ -10,7 +10,7 @@
 
 package hwaccel
 
-import "go-mediatoolkit/video"
+import "github.com/daniel-sullivan/go-mediatoolkit/video"
 
 // splitAnnexB splits an Annex-B byte stream into its raw NAL units
 // (start codes stripped). It recognises both the 3-byte (00 00 01) and

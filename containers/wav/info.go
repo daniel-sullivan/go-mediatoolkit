@@ -5,7 +5,7 @@ import (
 	"encoding/binary"
 	"strings"
 
-	"go-mediatoolkit/containers"
+	"github.com/daniel-sullivan/go-mediatoolkit/containers"
 )
 
 // infoToTag maps RIFF INFO four-CCs to Vorbis-style tag keys.

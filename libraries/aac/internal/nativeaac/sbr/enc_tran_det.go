@@ -26,7 +26,7 @@
 // concurrently-developed SBR decoder/HF-gen files in this shared package.
 package sbr
 
-import "go-mediatoolkit/libraries/aac/internal/nativeaac"
+import "github.com/daniel-sullivan/go-mediatoolkit/libraries/aac/internal/nativeaac"
 
 // ABS_THRES, NRG_SHIFT (tran_det.cpp:115,129) and LD_DATA_SHIFT.
 const (

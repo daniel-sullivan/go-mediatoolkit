@@ -15,8 +15,8 @@
 package heaac
 
 import (
-	"go-mediatoolkit/libraries/aac/internal/nativeaac"
-	"go-mediatoolkit/libraries/aac/internal/nativeaac/sbr"
+	"github.com/daniel-sullivan/go-mediatoolkit/libraries/aac/internal/nativeaac"
+	"github.com/daniel-sullivan/go-mediatoolkit/libraries/aac/internal/nativeaac/sbr"
 )
 
 // Encoder-side constants (aacenc_lib.cpp).

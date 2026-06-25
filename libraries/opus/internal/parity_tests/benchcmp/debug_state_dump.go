@@ -32,7 +32,7 @@ import (
 	"sort"
 	"strings"
 
-	"go-mediatoolkit/libraries/opus/internal/nativeopus"
+	"github.com/daniel-sullivan/go-mediatoolkit/libraries/opus/internal/nativeopus"
 )
 
 // StateField is a single (name, type, value) tuple in a flattened

@@ -7,7 +7,7 @@ import (
 	"math"
 	"testing"
 
-	"go-mediatoolkit/libraries/opus/internal/nativeopus"
+	"github.com/daniel-sullivan/go-mediatoolkit/libraries/opus/internal/nativeopus"
 )
 
 // bitExactF32 checks that two float32s have identical IEEE 754 bit

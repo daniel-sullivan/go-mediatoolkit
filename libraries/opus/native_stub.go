@@ -3,7 +3,7 @@ package opus
 import (
 	"fmt"
 
-	"go-mediatoolkit/libraries/opus/internal/nativeopus"
+	"github.com/daniel-sullivan/go-mediatoolkit/libraries/opus/internal/nativeopus"
 )
 
 // newNativeEncoder / newNativeDecoder route to the pure-Go libopus port

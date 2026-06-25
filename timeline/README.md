@@ -31,8 +31,8 @@ import (
 	"log"
 	"time"
 
-	"go-mediatoolkit/generators"
-	"go-mediatoolkit/timeline"
+	"github.com/daniel-sullivan/go-mediatoolkit/generators"
+	"github.com/daniel-sullivan/go-mediatoolkit/timeline"
 )
 
 func main() {

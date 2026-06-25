@@ -5,7 +5,7 @@ package benchcmp
 import (
 	"testing"
 
-	"go-mediatoolkit/libraries/opus/internal/nativeopus"
+	"github.com/daniel-sullivan/go-mediatoolkit/libraries/opus/internal/nativeopus"
 )
 
 // TestBisectHarness_Fs24kMono_20ms_48k_LowDelay exercises the

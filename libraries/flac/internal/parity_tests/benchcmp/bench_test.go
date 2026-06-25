@@ -8,7 +8,7 @@ import (
 	"sync"
 	"testing"
 
-	"go-mediatoolkit/libraries/flac/internal/nativeflac"
+	"github.com/daniel-sullivan/go-mediatoolkit/libraries/flac/internal/nativeflac"
 )
 
 // Representative benchmark signal: 1 second, 44100 Hz, 2 channels, 16-bit,

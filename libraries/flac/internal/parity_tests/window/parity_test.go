@@ -6,7 +6,7 @@ import (
 	"math"
 	"testing"
 
-	"go-mediatoolkit/libraries/flac/internal/nativeflac"
+	"github.com/daniel-sullivan/go-mediatoolkit/libraries/flac/internal/nativeflac"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

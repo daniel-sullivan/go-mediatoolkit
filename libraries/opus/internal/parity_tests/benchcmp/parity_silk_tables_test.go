@@ -7,7 +7,7 @@ import (
 	"reflect"
 	"testing"
 
-	"go-mediatoolkit/libraries/opus/internal/nativeopus"
+	"github.com/daniel-sullivan/go-mediatoolkit/libraries/opus/internal/nativeopus"
 )
 
 func eqBytes(t *testing.T, name string, c, g []byte) {

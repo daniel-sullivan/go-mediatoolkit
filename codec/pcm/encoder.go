@@ -2,7 +2,7 @@ package pcm
 
 import (
 	"encoding/binary"
-	"go-mediatoolkit/mutations"
+	"github.com/daniel-sullivan/go-mediatoolkit/mutations"
 	"io"
 )
 

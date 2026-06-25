@@ -10,8 +10,8 @@ package pcm
 
 import (
 	"encoding/binary"
-	"go-mediatoolkit/codec"
-	"go-mediatoolkit/mutations"
+	"github.com/daniel-sullivan/go-mediatoolkit/codec"
+	"github.com/daniel-sullivan/go-mediatoolkit/mutations"
 	"io"
 )
 

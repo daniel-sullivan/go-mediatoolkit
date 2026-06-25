@@ -7,7 +7,7 @@ import (
 	"math"
 	"testing"
 
-	opus "go-mediatoolkit/libraries/opus"
+	opus "github.com/daniel-sullivan/go-mediatoolkit/libraries/opus"
 )
 
 func sinF32(n int) []float32 {

@@ -7,7 +7,7 @@ import (
 	"math/rand/v2"
 	"testing"
 
-	"go-mediatoolkit/libraries/aac/internal/nativeaac/sbr"
+	"github.com/daniel-sullivan/go-mediatoolkit/libraries/aac/internal/nativeaac/sbr"
 
 	"github.com/stretchr/testify/require"
 )

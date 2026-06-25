@@ -7,7 +7,7 @@ import (
 	"os/exec"
 	"testing"
 
-	"go-mediatoolkit/video"
+	"github.com/daniel-sullivan/go-mediatoolkit/video"
 )
 
 // vtNV12FrameBytes is the byte size of one NV12 (4:2:0) frame at w×h

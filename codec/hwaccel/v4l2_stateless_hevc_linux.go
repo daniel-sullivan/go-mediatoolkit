@@ -35,7 +35,7 @@ import (
 	"time"
 	"unsafe"
 
-	"go-mediatoolkit/video"
+	"github.com/daniel-sullivan/go-mediatoolkit/video"
 )
 
 // statelessNumOutputBufs / statelessNumCaptureBufs size the two queues.

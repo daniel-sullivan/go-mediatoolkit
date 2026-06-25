@@ -6,7 +6,7 @@ package filterbank
 import (
 	"testing"
 
-	"go-mediatoolkit/libraries/aac/internal/nativeaac"
+	"github.com/daniel-sullivan/go-mediatoolkit/libraries/aac/internal/nativeaac"
 
 	"github.com/stretchr/testify/require"
 )

@@ -8,12 +8,12 @@ import (
 	"math"
 	"time"
 
-	"go-mediatoolkit/consts"
+	"github.com/daniel-sullivan/go-mediatoolkit/consts"
 
-	"go-mediatoolkit/codec"
-	"go-mediatoolkit/codec/opus"
-	"go-mediatoolkit/generators"
-	opuslib "go-mediatoolkit/libraries/opus"
+	"github.com/daniel-sullivan/go-mediatoolkit/codec"
+	"github.com/daniel-sullivan/go-mediatoolkit/codec/opus"
+	"github.com/daniel-sullivan/go-mediatoolkit/generators"
+	opuslib "github.com/daniel-sullivan/go-mediatoolkit/libraries/opus"
 )
 
 // packetCollector captures encoded Opus packets into a slice.

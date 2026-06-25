@@ -6,7 +6,7 @@ import (
 	"log"
 	"math"
 
-	"go-mediatoolkit/libraries/opus"
+	"github.com/daniel-sullivan/go-mediatoolkit/libraries/opus"
 )
 
 func main() {

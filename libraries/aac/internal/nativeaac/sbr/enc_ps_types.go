@@ -12,7 +12,7 @@
 // GA baseline HE-AAC v2 only: IPD/OPD not transmitted, DRM/LD/ELD/USAC excluded.
 package sbr
 
-import "go-mediatoolkit/libraries/aac/internal/nativeaac"
+import "github.com/daniel-sullivan/go-mediatoolkit/libraries/aac/internal/nativeaac"
 
 // PS encode constants (ps_const.h:106-148).
 const (

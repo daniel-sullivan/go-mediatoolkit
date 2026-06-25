@@ -14,10 +14,10 @@ import (
 	"log"
 	"time"
 
-	"go-mediatoolkit/codec/pcm"
-	"go-mediatoolkit/consts"
-	"go-mediatoolkit/generators"
-	"go-mediatoolkit/mutations"
+	"github.com/daniel-sullivan/go-mediatoolkit/codec/pcm"
+	"github.com/daniel-sullivan/go-mediatoolkit/consts"
+	"github.com/daniel-sullivan/go-mediatoolkit/generators"
+	"github.com/daniel-sullivan/go-mediatoolkit/mutations"
 )
 
 func main() {

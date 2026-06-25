@@ -4,7 +4,7 @@
 
 package vbrtag
 
-import "go-mediatoolkit/libraries/mp3/internal/nativemp3"
+import "github.com/daniel-sullivan/go-mediatoolkit/libraries/mp3/internal/nativemp3"
 
 // reconstructFromOracle builds a pure-Go LameInternalFlags + LameGlobalFlags
 // that mirror the C oracle's captured -V2 encode state (cfg / ov_enc / ov_rpg /

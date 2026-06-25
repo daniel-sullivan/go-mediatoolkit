@@ -20,11 +20,11 @@ import (
 	"syscall"
 	"time"
 
-	"go-mediatoolkit/consts"
-	"go-mediatoolkit/devices"
-	"go-mediatoolkit/mixer"
-	"go-mediatoolkit/mutations"
-	"go-mediatoolkit/timeline"
+	"github.com/daniel-sullivan/go-mediatoolkit/consts"
+	"github.com/daniel-sullivan/go-mediatoolkit/devices"
+	"github.com/daniel-sullivan/go-mediatoolkit/mixer"
+	"github.com/daniel-sullivan/go-mediatoolkit/mutations"
+	"github.com/daniel-sullivan/go-mediatoolkit/timeline"
 )
 
 const (

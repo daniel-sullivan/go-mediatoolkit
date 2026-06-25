@@ -8,7 +8,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"go-mediatoolkit/libraries/mp3/internal/nativemp3"
+	"github.com/daniel-sullivan/go-mediatoolkit/libraries/mp3/internal/nativemp3"
 )
 
 // The minimp3 bit reader (bs_t / get_bits) is integer-only, so its output is

@@ -5,7 +5,7 @@ package hwaccel
 import (
 	"testing"
 
-	"go-mediatoolkit/video"
+	"github.com/daniel-sullivan/go-mediatoolkit/video"
 )
 
 // BenchmarkNVENCH264Encode measures NVIDIA NVENC H.264 encode throughput at

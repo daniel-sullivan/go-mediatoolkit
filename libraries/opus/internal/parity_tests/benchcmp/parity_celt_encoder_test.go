@@ -7,7 +7,7 @@ import (
 	"math"
 	"testing"
 
-	"go-mediatoolkit/libraries/opus/internal/nativeopus"
+	"github.com/daniel-sullivan/go-mediatoolkit/libraries/opus/internal/nativeopus"
 )
 
 // TestParity_CeltEncode_Mono — encode a mono PCM burst with both C

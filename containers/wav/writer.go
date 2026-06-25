@@ -5,7 +5,7 @@ import (
 	"encoding/binary"
 	"io"
 
-	"go-mediatoolkit/mutations"
+	"github.com/daniel-sullivan/go-mediatoolkit/mutations"
 )
 
 // Writer emits a RIFF/WAVE file to an io.WriteSeeker. It writes the RIFF +

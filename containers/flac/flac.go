@@ -8,7 +8,7 @@
 // A [Reader] parses the metadata chain and exposes a continuous
 // [io.Reader] over the original byte stream — including the magic and
 // metadata bytes — so callers can pipe it straight into
-// [go-mediatoolkit/libraries/flac.NewDecoder] without re-seeking.
+// [github.com/daniel-sullivan/go-mediatoolkit/libraries/flac.NewDecoder] without re-seeking.
 //
 // A [Writer] wraps a [libraries/flac.Encoder]. It projects a
 // [containers.Header] onto the encoder's options (tags from
@@ -17,10 +17,10 @@
 // samples. The encoder owns metadata writing; the container layer adds
 // no bytes of its own.
 //
-// For Ogg-encapsulated FLAC, see [go-mediatoolkit/containers/ogg.NewFLACReader].
+// For Ogg-encapsulated FLAC, see [github.com/daniel-sullivan/go-mediatoolkit/containers/ogg.NewFLACReader].
 package flac
 
-import "go-mediatoolkit/containers"
+import "github.com/daniel-sullivan/go-mediatoolkit/containers"
 
 // Header is the container Header specialised to FLAC Extras.
 type Header = containers.Header[Extras]

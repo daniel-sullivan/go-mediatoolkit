@@ -4,7 +4,7 @@ import (
 	"io"
 	"time"
 
-	"go-mediatoolkit/mutations"
+	"github.com/daniel-sullivan/go-mediatoolkit/mutations"
 )
 
 // EffectSource wraps a Source with an ordered chain of

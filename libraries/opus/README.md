@@ -12,7 +12,7 @@ The codec automatically selects SILK-only, CELT-only, or Hybrid mode based on th
 ## Usage
 
 ```go
-import "go-mediatoolkit/libraries/opus"
+import "github.com/daniel-sullivan/go-mediatoolkit/libraries/opus"
 ```
 
 All audio data uses interleaved `float64` samples (the go-mediatoolkit convention). For stereo: `[L0, R0, L1, R1, ...]`.

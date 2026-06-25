@@ -32,8 +32,8 @@ import (
 	"testing"
 	"time"
 
-	"go-mediatoolkit/generators"
-	"go-mediatoolkit/libraries/mp3"
+	"github.com/daniel-sullivan/go-mediatoolkit/generators"
+	"github.com/daniel-sullivan/go-mediatoolkit/libraries/mp3"
 )
 
 // ---- CLI / file helpers --------------------------------------------------

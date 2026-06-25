@@ -6,7 +6,7 @@ import (
 	"math"
 	"time"
 
-	"go-mediatoolkit/mutations"
+	"github.com/daniel-sullivan/go-mediatoolkit/mutations"
 )
 
 // Sine generates a mono sine wave at the given frequency over the

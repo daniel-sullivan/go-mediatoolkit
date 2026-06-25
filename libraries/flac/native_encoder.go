@@ -3,7 +3,7 @@ package flac
 import (
 	"io"
 
-	"go-mediatoolkit/libraries/flac/internal/nativeflac"
+	"github.com/daniel-sullivan/go-mediatoolkit/libraries/flac/internal/nativeflac"
 )
 
 // nativeEncoder adapts the pure-Go nativeflac.StreamEncoder to the public

@@ -6,9 +6,9 @@ import (
 	"math"
 	"testing"
 
-	"go-mediatoolkit/codec"
-	aaclib "go-mediatoolkit/libraries/aac"
-	"go-mediatoolkit/mutations"
+	"github.com/daniel-sullivan/go-mediatoolkit/codec"
+	aaclib "github.com/daniel-sullivan/go-mediatoolkit/libraries/aac"
+	"github.com/daniel-sullivan/go-mediatoolkit/mutations"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

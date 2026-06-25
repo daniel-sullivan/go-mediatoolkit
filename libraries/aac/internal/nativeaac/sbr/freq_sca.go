@@ -3,7 +3,7 @@
 
 package sbr
 
-import "go-mediatoolkit/libraries/aac/internal/nativeaac"
+import "github.com/daniel-sullivan/go-mediatoolkit/libraries/aac/internal/nativeaac"
 
 // This file is the 1:1 port of the vendored libSBRdec sbrdec_freq_sca.cpp: the
 // SBR master frequency table builder and the high/low/noise frequency-band

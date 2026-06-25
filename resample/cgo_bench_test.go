@@ -12,7 +12,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"go-mediatoolkit/resample"
+	"github.com/daniel-sullivan/go-mediatoolkit/resample"
 )
 
 func BenchmarkZOH_C(b *testing.B) {

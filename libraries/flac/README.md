@@ -13,7 +13,7 @@ A STREAMINFO MD5 of the original samples lets a decoder verify losslessness.
 ## Usage
 
 ```go
-import "go-mediatoolkit/libraries/flac"
+import "github.com/daniel-sullivan/go-mediatoolkit/libraries/flac"
 ```
 
 `libraries/flac` operates on interleaved **`int32`** samples (sign-extended from the stream bit depth) and reads/writes a complete native FLAC byte stream — the `fLaC` magic, metadata blocks, and audio frames. For stereo: `[L0, R0, L1, R1, ...]`.
@@ -63,7 +63,7 @@ for {
 ### Streaming float64 (`codec/flac`)
 
 ```go
-import codecflac "go-mediatoolkit/codec/flac"
+import codecflac "github.com/daniel-sullivan/go-mediatoolkit/codec/flac"
 
 dec, err := codecflac.NewDecoder(r)                       // io.Reader → mutations.Audio
 enc, err := codecflac.NewEncoder(w, 44100, 2,             // float64 in, FLAC out
@@ -73,7 +73,7 @@ enc, err := codecflac.NewEncoder(w, 44100, 2,             // float64 in, FLAC ou
 ### Metadata & tags (`containers/flac`)
 
 ```go
-import ctrflac "go-mediatoolkit/containers/flac"
+import ctrflac "github.com/daniel-sullivan/go-mediatoolkit/containers/flac"
 
 rd, err := ctrflac.NewReader(r)   // parses the metadata chain
 hdr := rd.Header()                // SampleRate/Channels/BitsPerSample + tags + seektable

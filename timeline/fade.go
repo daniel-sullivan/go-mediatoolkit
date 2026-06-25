@@ -4,7 +4,7 @@ import (
 	"errors"
 	"time"
 
-	"go-mediatoolkit/mutations"
+	"github.com/daniel-sullivan/go-mediatoolkit/mutations"
 )
 
 // NewFadeIn returns a Transform whose gain rises linearly from 0 to 1

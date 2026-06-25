@@ -16,7 +16,7 @@
 // The Opus helper populates the uniform Header fully.
 package ogg
 
-import "go-mediatoolkit/containers"
+import "github.com/daniel-sullivan/go-mediatoolkit/containers"
 
 // Header is the container Header specialised to Ogg [Extras].
 type Header = containers.Header[Extras]

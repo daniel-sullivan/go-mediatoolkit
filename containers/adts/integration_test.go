@@ -6,9 +6,9 @@ import (
 	"io"
 	"testing"
 
-	aaccodec "go-mediatoolkit/codec/aac"
-	"go-mediatoolkit/containers/adts"
-	aaclib "go-mediatoolkit/libraries/aac"
+	aaccodec "github.com/daniel-sullivan/go-mediatoolkit/codec/aac"
+	"github.com/daniel-sullivan/go-mediatoolkit/containers/adts"
+	aaclib "github.com/daniel-sullivan/go-mediatoolkit/libraries/aac"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

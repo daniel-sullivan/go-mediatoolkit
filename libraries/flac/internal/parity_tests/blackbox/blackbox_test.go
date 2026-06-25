@@ -54,8 +54,8 @@ import (
 	"testing"
 	"time"
 
-	"go-mediatoolkit/generators"
-	"go-mediatoolkit/libraries/flac/internal/nativeflac"
+	"github.com/daniel-sullivan/go-mediatoolkit/generators"
+	"github.com/daniel-sullivan/go-mediatoolkit/libraries/flac/internal/nativeflac"
 )
 
 // ---- flac CLI binary ------------------------------------------------------

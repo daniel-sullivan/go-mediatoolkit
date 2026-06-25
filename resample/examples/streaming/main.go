@@ -9,11 +9,11 @@ import (
 	"os"
 	"time"
 
-	"go-mediatoolkit/consts"
+	"github.com/daniel-sullivan/go-mediatoolkit/consts"
 
-	"go-mediatoolkit/generators"
-	"go-mediatoolkit/mutations"
-	"go-mediatoolkit/resample"
+	"github.com/daniel-sullivan/go-mediatoolkit/generators"
+	"github.com/daniel-sullivan/go-mediatoolkit/mutations"
+	"github.com/daniel-sullivan/go-mediatoolkit/resample"
 )
 
 func main() {

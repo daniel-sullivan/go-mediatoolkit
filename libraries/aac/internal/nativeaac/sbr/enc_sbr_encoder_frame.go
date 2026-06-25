@@ -20,7 +20,7 @@
 // is FIXED-POINT — byte-identical bitstream.
 package sbr
 
-import "go-mediatoolkit/libraries/aac/internal/nativeaac"
+import "github.com/daniel-sullivan/go-mediatoolkit/libraries/aac/internal/nativeaac"
 
 // Delay-balancing macros for the HE-AAC v1 (non-LD, non-PS) path
 // (sbr_encoder.cpp:132-191). dwnsmp == downSampleFactor.

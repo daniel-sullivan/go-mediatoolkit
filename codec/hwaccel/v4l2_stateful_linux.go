@@ -36,7 +36,7 @@ import (
 	"syscall"
 	"time"
 
-	"go-mediatoolkit/video"
+	"github.com/daniel-sullivan/go-mediatoolkit/video"
 )
 
 const (

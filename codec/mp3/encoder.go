@@ -1,8 +1,8 @@
 package mp3
 
 import (
-	mp3lib "go-mediatoolkit/libraries/mp3"
-	"go-mediatoolkit/mutations"
+	mp3lib "github.com/daniel-sullivan/go-mediatoolkit/libraries/mp3"
+	"github.com/daniel-sullivan/go-mediatoolkit/mutations"
 )
 
 // encoder wraps a [libraries/mp3.Encoder] and converts interleaved float64

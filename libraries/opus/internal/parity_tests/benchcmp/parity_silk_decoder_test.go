@@ -6,7 +6,7 @@ import (
 	"math"
 	"testing"
 
-	"go-mediatoolkit/libraries/opus/internal/nativeopus"
+	"github.com/daniel-sullivan/go-mediatoolkit/libraries/opus/internal/nativeopus"
 )
 
 // floatsEq checks for bit-exact equality; SILK output is produced from

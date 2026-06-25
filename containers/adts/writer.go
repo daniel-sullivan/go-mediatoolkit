@@ -3,7 +3,7 @@ package adts
 import (
 	"io"
 
-	aaclib "go-mediatoolkit/libraries/aac"
+	aaclib "github.com/daniel-sullivan/go-mediatoolkit/libraries/aac"
 )
 
 // Writer wraps raw AAC access units in ADTS frame headers and writes the
@@ -12,7 +12,7 @@ import (
 // then frames each access unit handed to [Writer.WritePacket], computing the
 // per-frame aac_frame_length and, when enabled, the CRC.
 //
-// Writer implements [go-mediatoolkit/codec/aac.PacketWriter], so an encoder
+// Writer implements [github.com/daniel-sullivan/go-mediatoolkit/codec/aac.PacketWriter], so an encoder
 // pipeline (codec/aac.NewEncoder) can emit a standalone `.aac` stream by
 // pointing its PacketWriter at a Writer.
 type Writer struct {

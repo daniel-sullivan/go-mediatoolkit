@@ -3,7 +3,7 @@
 
 package sbr
 
-import "go-mediatoolkit/libraries/aac/internal/nativeaac"
+import "github.com/daniel-sullivan/go-mediatoolkit/libraries/aac/internal/nativeaac"
 
 // SBR decoder constant tables, a 1:1 port of the vendored libSBRdec sbr_rom.cpp
 // (FDK_sbrDecoder_* symbols). Scope is HE-AAC v1 (STD) decode: the start/stop

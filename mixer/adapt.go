@@ -5,9 +5,9 @@ import (
 	"log"
 	"time"
 
-	"go-mediatoolkit/mutations"
-	"go-mediatoolkit/resample"
-	"go-mediatoolkit/timeline"
+	"github.com/daniel-sullivan/go-mediatoolkit/mutations"
+	"github.com/daniel-sullivan/go-mediatoolkit/resample"
+	"github.com/daniel-sullivan/go-mediatoolkit/timeline"
 )
 
 // adaptSource wraps src with rate and channel adapters as needed to

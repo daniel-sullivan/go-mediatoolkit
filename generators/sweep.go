@@ -4,7 +4,7 @@ import (
 	"math"
 	"time"
 
-	"go-mediatoolkit/mutations"
+	"github.com/daniel-sullivan/go-mediatoolkit/mutations"
 )
 
 // SineSweep generates a logarithmic sine sweep from startHz to endHz

@@ -26,7 +26,7 @@
 // parity, no FP/aac_strict discipline.
 package sbr
 
-import "go-mediatoolkit/libraries/aac/internal/nativeaac"
+import "github.com/daniel-sullivan/go-mediatoolkit/libraries/aac/internal/nativeaac"
 
 // CalculateTonalityQuotas is the 1:1 port of FDKsbrEnc_CalculateTonalityQuotas
 // (ton_corr.cpp:133-341): buffers the quota/sign matrices, then computes the

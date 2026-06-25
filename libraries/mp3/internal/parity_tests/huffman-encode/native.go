@@ -4,7 +4,7 @@
 
 package huffmanencode
 
-import "go-mediatoolkit/libraries/mp3/internal/nativemp3"
+import "github.com/daniel-sullivan/go-mediatoolkit/libraries/mp3/internal/nativemp3"
 
 // native.go drives the pure-Go nativemp3 bit writer through helpers shaped
 // like the cgo oracle wrappers, so parity_test.go can compare the two sides

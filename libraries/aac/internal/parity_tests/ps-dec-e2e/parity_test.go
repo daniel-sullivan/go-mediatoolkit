@@ -7,7 +7,7 @@ import (
 	"math"
 	"testing"
 
-	"go-mediatoolkit/libraries/aac/internal/nativeaac/heaac"
+	"github.com/daniel-sullivan/go-mediatoolkit/libraries/aac/internal/nativeaac/heaac"
 
 	"github.com/stretchr/testify/require"
 )

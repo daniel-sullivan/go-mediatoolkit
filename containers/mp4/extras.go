@@ -1,6 +1,6 @@
 package mp4
 
-import aaclib "go-mediatoolkit/libraries/aac"
+import aaclib "github.com/daniel-sullivan/go-mediatoolkit/libraries/aac"
 
 // Extras carries MP4/ISOBMFF-specific metadata that does not fit the
 // uniform [containers.Header] view: the file brand, the decoder

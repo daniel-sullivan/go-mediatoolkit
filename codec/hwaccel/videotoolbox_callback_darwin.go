@@ -13,7 +13,7 @@ import (
 	"unsafe"
 
 	"github.com/ebitengine/purego"
-	"go-mediatoolkit/video"
+	"github.com/daniel-sullivan/go-mediatoolkit/video"
 )
 
 // startCode is the 4-byte Annex-B NAL start code.

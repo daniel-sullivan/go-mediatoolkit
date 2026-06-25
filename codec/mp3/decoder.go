@@ -3,8 +3,8 @@ package mp3
 import (
 	"io"
 
-	mp3lib "go-mediatoolkit/libraries/mp3"
-	"go-mediatoolkit/mutations"
+	mp3lib "github.com/daniel-sullivan/go-mediatoolkit/libraries/mp3"
+	"github.com/daniel-sullivan/go-mediatoolkit/mutations"
 )
 
 // scale16 converts a signed 16-bit sample to float64 in [-1.0, 1.0] by

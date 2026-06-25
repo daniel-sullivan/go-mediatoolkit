@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go-mediatoolkit/containers"
-	mp3lib "go-mediatoolkit/libraries/mp3"
+	"github.com/daniel-sullivan/go-mediatoolkit/containers"
+	mp3lib "github.com/daniel-sullivan/go-mediatoolkit/libraries/mp3"
 )
 
 // requireEncoder skips the calling test when the MP3 encoder is not compiled

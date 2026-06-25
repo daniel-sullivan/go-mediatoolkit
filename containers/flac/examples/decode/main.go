@@ -20,10 +20,10 @@ import (
 	"math"
 	"time"
 
-	codecflac "go-mediatoolkit/codec/flac"
-	"go-mediatoolkit/consts"
-	ctrflac "go-mediatoolkit/containers/flac"
-	"go-mediatoolkit/generators"
+	codecflac "github.com/daniel-sullivan/go-mediatoolkit/codec/flac"
+	"github.com/daniel-sullivan/go-mediatoolkit/consts"
+	ctrflac "github.com/daniel-sullivan/go-mediatoolkit/containers/flac"
+	"github.com/daniel-sullivan/go-mediatoolkit/generators"
 )
 
 func main() {

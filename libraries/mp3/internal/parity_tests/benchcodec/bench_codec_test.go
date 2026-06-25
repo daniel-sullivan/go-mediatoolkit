@@ -28,7 +28,7 @@ import (
 	"math"
 	"testing"
 
-	mp3 "go-mediatoolkit/libraries/mp3"
+	mp3 "github.com/daniel-sullivan/go-mediatoolkit/libraries/mp3"
 )
 
 const (

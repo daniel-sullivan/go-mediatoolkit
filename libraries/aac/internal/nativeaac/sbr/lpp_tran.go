@@ -46,7 +46,7 @@ package sbr
 //   getScalefactor/scaleValues   -> nativeaac.GetScalefactor / ScaleValues
 //   fixp_abs/fixMin/fixMax       -> nativeaac.FixpAbs / FMinI / FMaxI
 
-import "go-mediatoolkit/libraries/aac/internal/nativeaac"
+import "github.com/daniel-sullivan/go-mediatoolkit/libraries/aac/internal/nativeaac"
 
 // Q1.31 / Q1.15 constants the transposer compares against, materialised through
 // the shared narrowing macros (FL2FXCONST_DBL / _SGL).

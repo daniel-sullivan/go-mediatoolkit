@@ -19,8 +19,8 @@ import (
 	"math"
 	"os"
 
-	"go-mediatoolkit/codec/pcm"
-	"go-mediatoolkit/containers/wav"
+	"github.com/daniel-sullivan/go-mediatoolkit/codec/pcm"
+	"github.com/daniel-sullivan/go-mediatoolkit/containers/wav"
 )
 
 func main() {

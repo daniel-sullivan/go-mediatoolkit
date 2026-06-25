@@ -4,7 +4,7 @@
 
 package takehiro
 
-import "go-mediatoolkit/libraries/mp3/internal/nativemp3"
+import "github.com/daniel-sullivan/go-mediatoolkit/libraries/mp3/internal/nativemp3"
 
 // native.go drives the pure-Go nativemp3 takehiro routines through helpers
 // shaped like the cgo oracle wrappers (cgo.go), so parity_test.go can compare

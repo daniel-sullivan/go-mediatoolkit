@@ -4,7 +4,7 @@ import (
 	"math"
 	"time"
 
-	"go-mediatoolkit/mutations"
+	"github.com/daniel-sullivan/go-mediatoolkit/mutations"
 )
 
 // notePeak is the maximum sample amplitude produced by Note. Set well

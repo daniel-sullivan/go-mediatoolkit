@@ -1,8 +1,8 @@
 package hwaccel
 
 import (
-	"go-mediatoolkit/events"
-	"go-mediatoolkit/video"
+	"github.com/daniel-sullivan/go-mediatoolkit/events"
+	"github.com/daniel-sullivan/go-mediatoolkit/video"
 )
 
 // HardwareFallbackEvent is published when Open* under PreferHardware

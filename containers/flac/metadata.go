@@ -4,7 +4,7 @@ import (
 	"encoding/binary"
 	"strings"
 
-	"go-mediatoolkit/containers"
+	"github.com/daniel-sullivan/go-mediatoolkit/containers"
 )
 
 // FLAC magic and metadata block-type identifiers (RFC 9639).

@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"unsafe"
 
-	"go-mediatoolkit/video"
+	"github.com/daniel-sullivan/go-mediatoolkit/video"
 )
 
 // startCodeVA is the 4-byte Annex-B NAL start code.

@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go-mediatoolkit/containers"
-	flaclib "go-mediatoolkit/libraries/flac"
+	"github.com/daniel-sullivan/go-mediatoolkit/containers"
+	flaclib "github.com/daniel-sullivan/go-mediatoolkit/libraries/flac"
 )
 
 func generateTone(t *testing.T, sampleRate, channels, bits, samplesPerChannel int, freq float64) []int32 {
@@ -106,7 +106,7 @@ func TestContainerRoundTripWithTags(t *testing.T) {
 		Tags:       stdTags,
 		Extra: Extras{
 			StreamInfo: StreamInfo{BitsPerSample: bits},
-			Vendor:     "go-mediatoolkit/test",
+			Vendor:     "github.com/daniel-sullivan/go-mediatoolkit/test",
 		},
 	}
 	w, err := NewWriter(&buf, h)

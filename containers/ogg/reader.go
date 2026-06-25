@@ -5,8 +5,8 @@ import (
 	"errors"
 	"io"
 
-	"go-mediatoolkit/containers"
-	"go-mediatoolkit/libraries/ogg"
+	"github.com/daniel-sullivan/go-mediatoolkit/containers"
+	"github.com/daniel-sullivan/go-mediatoolkit/libraries/ogg"
 )
 
 // Reader demultiplexes an Ogg bitstream into one or more logical streams.

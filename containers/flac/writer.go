@@ -3,7 +3,7 @@ package flac
 import (
 	"io"
 
-	flaclib "go-mediatoolkit/libraries/flac"
+	flaclib "github.com/daniel-sullivan/go-mediatoolkit/libraries/flac"
 )
 
 // Writer encodes a FLAC stream from a [Header] and interleaved int32

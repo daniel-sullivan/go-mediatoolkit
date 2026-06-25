@@ -1,8 +1,8 @@
 package opus
 
 import (
-	opuslib "go-mediatoolkit/libraries/opus"
-	"go-mediatoolkit/mutations"
+	opuslib "github.com/daniel-sullivan/go-mediatoolkit/libraries/opus"
+	"github.com/daniel-sullivan/go-mediatoolkit/mutations"
 )
 
 type encoder struct {

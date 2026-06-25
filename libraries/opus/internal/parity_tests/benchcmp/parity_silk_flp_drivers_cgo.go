@@ -285,7 +285,7 @@ import "C"
 import (
 	"unsafe"
 
-	"go-mediatoolkit/libraries/opus/internal/nativeopus"
+	"github.com/daniel-sullivan/go-mediatoolkit/libraries/opus/internal/nativeopus"
 )
 
 func cSilkProcessGainsFLP(p nativeopus.SilkEncoderStateFLPPayload) nativeopus.SilkEncoderStateFLPPayload {

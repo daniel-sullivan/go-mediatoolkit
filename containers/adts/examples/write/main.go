@@ -19,8 +19,8 @@ import (
 	"log"
 	"os"
 
-	"go-mediatoolkit/containers/adts"
-	aaclib "go-mediatoolkit/libraries/aac"
+	"github.com/daniel-sullivan/go-mediatoolkit/containers/adts"
+	aaclib "github.com/daniel-sullivan/go-mediatoolkit/libraries/aac"
 )
 
 func main() {

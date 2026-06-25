@@ -2,7 +2,7 @@
 
 package bitallocation
 
-import "go-mediatoolkit/libraries/mp3/internal/nativemp3"
+import "github.com/daniel-sullivan/go-mediatoolkit/libraries/mp3/internal/nativemp3"
 
 // native.go drives the pure-Go nativemp3 port the same way oracle.c drives the
 // vendored C: parse a raw side-info buffer with nativemp3.L3ReadSideInfo to

@@ -3,7 +3,7 @@
 
 package sbr
 
-import "go-mediatoolkit/libraries/aac/internal/nativeaac"
+import "github.com/daniel-sullivan/go-mediatoolkit/libraries/aac/internal/nativeaac"
 
 // Encode-side QMF synthesis slot producing INT_PCM == int16 time samples — the
 // SAMPLE_BITS == 16 instantiation of qmfSynthesisFilteringSlot the PS-encode

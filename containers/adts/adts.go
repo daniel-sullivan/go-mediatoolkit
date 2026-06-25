@@ -10,17 +10,17 @@
 // AudioObjectType minus one), the samplingFrequencyIndex, the
 // channelConfiguration, and the total frame length. It performs **no
 // compression of its own** — it adds only the header bytes, exactly as
-// [go-mediatoolkit/containers/ogg] frames Opus packets into pages. The AAC
+// [github.com/daniel-sullivan/go-mediatoolkit/containers/ogg] frames Opus packets into pages. The AAC
 // bitstream engine, the cgo-vs-native routing, and the FDK license fence all
-// live in [go-mediatoolkit/libraries/aac]; the streaming float64 seam lives
-// in [go-mediatoolkit/codec/aac]. This package is **pure Go, MIT/untagged**,
+// live in [github.com/daniel-sullivan/go-mediatoolkit/libraries/aac]; the streaming float64 seam lives
+// in [github.com/daniel-sullivan/go-mediatoolkit/codec/aac]. This package is **pure Go, MIT/untagged**,
 // and links **zero** FDK-AAC code: it only locates and emits AAC access
 // units, never decoding them.
 //
 // Unlike MP4, ADTS carries no out-of-band [aaclib.AudioSpecificConfig]: the
 // decoder configuration is re-derived from the first frame header. A
 // [Reader] parses each frame, exposes its access unit as a packet (a
-// [go-mediatoolkit/codec/aac.PacketReader]), and projects the first header
+// [github.com/daniel-sullivan/go-mediatoolkit/codec/aac.PacketReader]), and projects the first header
 // onto an AudioSpecificConfig so callers can pipe an ADTS stream straight
 // into codec/aac without a separate config record. A [Writer] wraps raw AAC
 // access units in ADTS headers given the AOT / sample rate / channel count.
@@ -32,8 +32,8 @@
 package adts
 
 import (
-	"go-mediatoolkit/containers"
-	aaclib "go-mediatoolkit/libraries/aac"
+	"github.com/daniel-sullivan/go-mediatoolkit/containers"
+	aaclib "github.com/daniel-sullivan/go-mediatoolkit/libraries/aac"
 )
 
 // Header is the container Header specialised to ADTS [Extras]. SampleRate,

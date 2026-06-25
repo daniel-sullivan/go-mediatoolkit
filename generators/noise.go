@@ -4,7 +4,7 @@ import (
 	"math/rand"
 	"time"
 
-	"go-mediatoolkit/mutations"
+	"github.com/daniel-sullivan/go-mediatoolkit/mutations"
 )
 
 // WhiteNoise generates uniform white noise in [-1, 1].

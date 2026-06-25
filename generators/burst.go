@@ -4,7 +4,7 @@ import (
 	"math"
 	"time"
 
-	"go-mediatoolkit/mutations"
+	"github.com/daniel-sullivan/go-mediatoolkit/mutations"
 )
 
 // Beep renders a short sine burst suitable for UI or game-SFX cues.

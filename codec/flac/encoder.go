@@ -1,8 +1,8 @@
 package flac
 
 import (
-	flaclib "go-mediatoolkit/libraries/flac"
-	"go-mediatoolkit/mutations"
+	flaclib "github.com/daniel-sullivan/go-mediatoolkit/libraries/flac"
+	"github.com/daniel-sullivan/go-mediatoolkit/mutations"
 )
 
 // encoder wraps a [libraries/flac.Encoder] and converts interleaved

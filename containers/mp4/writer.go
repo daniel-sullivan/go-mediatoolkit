@@ -5,14 +5,14 @@ import (
 	"io"
 	"math"
 
-	"go-mediatoolkit/codec"
-	aaccodec "go-mediatoolkit/codec/aac"
-	aaclib "go-mediatoolkit/libraries/aac"
-	"go-mediatoolkit/mutations"
+	"github.com/daniel-sullivan/go-mediatoolkit/codec"
+	aaccodec "github.com/daniel-sullivan/go-mediatoolkit/codec/aac"
+	aaclib "github.com/daniel-sullivan/go-mediatoolkit/libraries/aac"
+	"github.com/daniel-sullivan/go-mediatoolkit/mutations"
 )
 
 // Writer muxes AAC access units into an ISOBMFF/MP4 file. It wraps a
-// [go-mediatoolkit/codec/aac] streaming encoder: callers Write interleaved
+// [github.com/daniel-sullivan/go-mediatoolkit/codec/aac] streaming encoder: callers Write interleaved
 // float64 PCM (any sample count), the encoder produces AAC access units, and
 // Close assembles the ftyp / moov (with esds + stsz/stsc/stco + stts) / mdat
 // box tree, projecting [Header].Tags onto an iTunes ilst box.

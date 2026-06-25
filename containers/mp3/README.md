@@ -37,8 +37,8 @@ across the toolkit. Frames with no standard mapping are preserved verbatim in
 
 ```go
 import (
-    ctrmp3 "go-mediatoolkit/containers/mp3"
-    "go-mediatoolkit/libraries/mp3"
+    ctrmp3 "github.com/daniel-sullivan/go-mediatoolkit/containers/mp3"
+    "github.com/daniel-sullivan/go-mediatoolkit/libraries/mp3"
 )
 
 rd, err := ctrmp3.NewReader(r)        // parses the leading ID3v2 (+ trailing ID3v1 if seekable)

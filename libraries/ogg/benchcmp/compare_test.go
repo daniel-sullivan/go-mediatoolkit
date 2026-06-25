@@ -6,7 +6,7 @@ import (
 	"bytes"
 	"testing"
 
-	"go-mediatoolkit/libraries/ogg"
+	"github.com/daniel-sullivan/go-mediatoolkit/libraries/ogg"
 )
 
 // ── Bit-exact page output: C encoder vs Go encoder ──────────────────

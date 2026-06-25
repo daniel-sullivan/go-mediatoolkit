@@ -4,7 +4,7 @@
 
 package vbre2e
 
-import "go-mediatoolkit/libraries/mp3/internal/nativemp3"
+import "github.com/daniel-sullivan/go-mediatoolkit/libraries/mp3/internal/nativemp3"
 
 // native.go drives the pure-Go nativemp3 encoder the same way oracle.c drives the
 // vendored C: build a -V2 (vbr_mtrh, VBR_q=2) LameGlobalFlags, run the encode

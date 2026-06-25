@@ -38,8 +38,8 @@ import (
 	"testing"
 	"time"
 
-	"go-mediatoolkit/generators"
-	"go-mediatoolkit/libraries/opus/internal/nativeopus"
+	"github.com/daniel-sullivan/go-mediatoolkit/generators"
+	"github.com/daniel-sullivan/go-mediatoolkit/libraries/opus/internal/nativeopus"
 )
 
 // ---- Configuration ------------------------------------------------------

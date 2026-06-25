@@ -3,7 +3,7 @@ package mp3
 import (
 	"io"
 
-	"go-mediatoolkit/libraries/mp3/internal/nativemp3"
+	"github.com/daniel-sullivan/go-mediatoolkit/libraries/mp3/internal/nativemp3"
 )
 
 // This file wires the pure-Go MP3 port (libraries/mp3/internal/nativemp3, the

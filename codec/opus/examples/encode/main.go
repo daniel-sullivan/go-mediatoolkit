@@ -17,9 +17,9 @@ import (
 	"log"
 	"time"
 
-	"go-mediatoolkit/codec/opus"
-	"go-mediatoolkit/consts"
-	"go-mediatoolkit/generators"
+	"github.com/daniel-sullivan/go-mediatoolkit/codec/opus"
+	"github.com/daniel-sullivan/go-mediatoolkit/consts"
+	"github.com/daniel-sullivan/go-mediatoolkit/generators"
 )
 
 // counter is a PacketWriter that tallies packets and their total size — the

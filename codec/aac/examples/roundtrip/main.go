@@ -22,12 +22,12 @@ import (
 	"math"
 	"time"
 
-	"go-mediatoolkit/codec"
-	aaccodec "go-mediatoolkit/codec/aac"
-	"go-mediatoolkit/consts"
-	"go-mediatoolkit/containers/adts"
-	"go-mediatoolkit/generators"
-	aaclib "go-mediatoolkit/libraries/aac"
+	"github.com/daniel-sullivan/go-mediatoolkit/codec"
+	aaccodec "github.com/daniel-sullivan/go-mediatoolkit/codec/aac"
+	"github.com/daniel-sullivan/go-mediatoolkit/consts"
+	"github.com/daniel-sullivan/go-mediatoolkit/containers/adts"
+	"github.com/daniel-sullivan/go-mediatoolkit/generators"
+	aaclib "github.com/daniel-sullivan/go-mediatoolkit/libraries/aac"
 )
 
 func main() {

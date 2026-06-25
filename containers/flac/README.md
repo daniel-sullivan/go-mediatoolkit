@@ -91,8 +91,8 @@ codec:
 
 ```go
 import (
-    "go-mediatoolkit/codec/flac"
-    ctrflac "go-mediatoolkit/containers/flac"
+    "github.com/daniel-sullivan/go-mediatoolkit/codec/flac"
+    ctrflac "github.com/daniel-sullivan/go-mediatoolkit/containers/flac"
 )
 
 rd, err := ctrflac.NewReader(r)        // parses fLaC + metadata chain

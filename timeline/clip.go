@@ -4,8 +4,8 @@ import (
 	"io"
 	"time"
 
-	"go-mediatoolkit/codec"
-	"go-mediatoolkit/mutations"
+	"github.com/daniel-sullivan/go-mediatoolkit/codec"
+	"github.com/daniel-sullivan/go-mediatoolkit/mutations"
 )
 
 // CachedClip is fully decoded PCM held in memory. It is a library

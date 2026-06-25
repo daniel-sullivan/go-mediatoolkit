@@ -5,7 +5,7 @@
 // [PacketReader] and [PacketWriter] interfaces for packet I/O. Callers provide
 // their own framing implementation (OGG, WebM, RTP, length-prefixed, etc.).
 //
-// The encoder and decoder wrap the [go-mediatoolkit/libraries/opus] package,
+// The encoder and decoder wrap the [github.com/daniel-sullivan/go-mediatoolkit/libraries/opus] package,
 // adding streaming semantics and buffering so callers can read/write arbitrary
 // sample counts without worrying about Opus frame boundaries.
 //
@@ -13,9 +13,9 @@
 package opus
 
 import (
-	"go-mediatoolkit/codec"
-	opuslib "go-mediatoolkit/libraries/opus"
-	"go-mediatoolkit/mutations"
+	"github.com/daniel-sullivan/go-mediatoolkit/codec"
+	opuslib "github.com/daniel-sullivan/go-mediatoolkit/libraries/opus"
+	"github.com/daniel-sullivan/go-mediatoolkit/mutations"
 	"io"
 )
 

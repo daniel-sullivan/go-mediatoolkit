@@ -79,7 +79,7 @@ go build -tags aacfdk ./libraries/aac/    # FDK-AAC engine (requires CGO_ENABLED
 ## Usage
 
 ```go
-import "go-mediatoolkit/libraries/aac"
+import "github.com/daniel-sullivan/go-mediatoolkit/libraries/aac"
 ```
 
 `libraries/aac` operates on interleaved **`float64`** samples normalized to
@@ -132,7 +132,7 @@ asc := enc.Config()
 ### Streaming float64 (`codec/aac`)
 
 ```go
-import aaccodec "go-mediatoolkit/codec/aac"
+import aaccodec "github.com/daniel-sullivan/go-mediatoolkit/codec/aac"
 
 dec, err := aaccodec.NewDecoder(packetReader, asc)            // packets → mutations.Audio
 enc, err := aaccodec.NewEncoder(packetWriter, 44100, 2,       // float64 in, packets out
@@ -142,7 +142,7 @@ enc, err := aaccodec.NewEncoder(packetWriter, 44100, 2,       // float64 in, pac
 ### M4A files (`containers/mp4`)
 
 ```go
-import "go-mediatoolkit/containers/mp4"
+import "github.com/daniel-sullivan/go-mediatoolkit/containers/mp4"
 
 rd, err := mp4.NewReader(r)            // parses the ISOBMFF box tree (MIT; no FDK)
 hdr := rd.Header()                     // SampleRate/Channels + tags + Extra.Config (ASC)

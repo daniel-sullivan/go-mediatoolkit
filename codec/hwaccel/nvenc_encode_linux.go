@@ -26,7 +26,7 @@ import (
 	"time"
 	"unsafe"
 
-	"go-mediatoolkit/video"
+	"github.com/daniel-sullivan/go-mediatoolkit/video"
 )
 
 // nvEncoder drives a single NVENC encode session. All state is created

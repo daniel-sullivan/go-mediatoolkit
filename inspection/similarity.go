@@ -3,7 +3,7 @@ package inspection
 import (
 	"math"
 
-	"go-mediatoolkit/mutations"
+	"github.com/daniel-sullivan/go-mediatoolkit/mutations"
 )
 
 type similarityConfig struct {

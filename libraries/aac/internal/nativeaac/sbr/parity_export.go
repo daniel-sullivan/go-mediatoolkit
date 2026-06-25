@@ -3,7 +3,7 @@
 
 package sbr
 
-import "go-mediatoolkit/libraries/aac/internal/nativeaac"
+import "github.com/daniel-sullivan/go-mediatoolkit/libraries/aac/internal/nativeaac"
 
 // Thin exported drivers + ROM views for the sbr-qmf cgo parity oracle
 // (internal/parity_tests/sbr-qmf). They add no logic: each mirrors exactly what

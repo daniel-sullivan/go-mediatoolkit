@@ -6,7 +6,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"go-mediatoolkit/mutations"
+	"github.com/daniel-sullivan/go-mediatoolkit/mutations"
 )
 
 // Timeline plays scheduled cues at their declared times and emits

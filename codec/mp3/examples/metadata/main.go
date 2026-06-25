@@ -9,8 +9,8 @@ import (
 	"fmt"
 	"log"
 
-	"go-mediatoolkit/containers"
-	ctrmp3 "go-mediatoolkit/containers/mp3"
+	"github.com/daniel-sullivan/go-mediatoolkit/containers"
+	ctrmp3 "github.com/daniel-sullivan/go-mediatoolkit/containers/mp3"
 )
 
 func main() {

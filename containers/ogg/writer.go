@@ -3,8 +3,8 @@ package ogg
 import (
 	"io"
 
-	"go-mediatoolkit/containers"
-	"go-mediatoolkit/libraries/ogg"
+	"github.com/daniel-sullivan/go-mediatoolkit/containers"
+	"github.com/daniel-sullivan/go-mediatoolkit/libraries/ogg"
 )
 
 // Writer multiplexes packets from one or more logical streams into an Ogg
@@ -19,7 +19,7 @@ type Writer struct {
 
 // StreamWriter is a single logical bitstream inside a Writer. It implements
 // [containers.PacketWriter] and is structurally compatible with
-// [go-mediatoolkit/codec/opus.PacketWriter].
+// [github.com/daniel-sullivan/go-mediatoolkit/codec/opus.PacketWriter].
 //
 // Internally, WritePacket buffers the most recent packet so the EOS flag
 // can be applied to the true final packet at Close time.

@@ -23,7 +23,7 @@ import (
 	"time"
 	"unsafe"
 
-	"go-mediatoolkit/video"
+	"github.com/daniel-sullivan/go-mediatoolkit/video"
 )
 
 // vtBackend is the VideoToolbox hwaccel.Backend. It is stateless once
