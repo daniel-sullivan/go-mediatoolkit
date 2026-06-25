@@ -53,8 +53,8 @@ import (
 	"sync"
 	"unsafe"
 
-	"github.com/ebitengine/purego"
 	"github.com/daniel-sullivan/go-mediatoolkit/video"
+	"github.com/ebitengine/purego"
 )
 
 // NewDecoder constructs a VideoToolbox decompression-session decoder for

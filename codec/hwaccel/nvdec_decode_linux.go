@@ -36,8 +36,8 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/ebitengine/purego"
 	"github.com/daniel-sullivan/go-mediatoolkit/video"
+	"github.com/ebitengine/purego"
 )
 
 // nvCallbacks holds the three purego.NewCallback trampolines shared by every

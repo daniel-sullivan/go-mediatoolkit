@@ -12,8 +12,8 @@ package hwaccel
 import (
 	"unsafe"
 
-	"github.com/ebitengine/purego"
 	"github.com/daniel-sullivan/go-mediatoolkit/video"
+	"github.com/ebitengine/purego"
 )
 
 // startCode is the 4-byte Annex-B NAL start code.
