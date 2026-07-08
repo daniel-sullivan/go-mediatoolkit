@@ -15,6 +15,7 @@ vendored references:
 | go-mediatoolkit (all original code) | MIT | This repo's own code. |
 | `libraries/mp3/libminimp3/**` (minimp3) | CC0-1.0 (public domain) | Vendored MP3 **decoder** reference. |
 | `libraries/flac/libflac/**` (libFLAC) | BSD-3-Clause | Vendored FLAC reference. |
+| `loudness/libebur128/**` (libebur128) | MIT | Vendored EBU R128 loudness reference (cgo parity oracle only; not compiled into CGO_ENABLED=0 builds). |
 
 ## The LGPL island: the MP3 encoder (opt-in only)
 
