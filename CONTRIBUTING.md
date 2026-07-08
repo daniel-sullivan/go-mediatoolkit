@@ -17,6 +17,7 @@ Pure-Go audio + video toolkit. Module path: `github.com/daniel-sullivan/go-media
 - `consts/` — shared numeric constants (sample rates, channel counts, equal-temperament note frequencies).
 - `timeline/` — Cue/Source playback engine; clips, fades, transforms, and nested timelines.
 - `mixer/` — sums multiple `timeline.Source` streams onto an SPSC ring for a `devices.Stream` callback.
+- `loudness/` — EBU R128 / ITU-R BS.1770-4 loudness metering and normalisation (`Meter`, `Measure`, `Normalize`, `Normalizer`, `Limiter`, `Leveller`, `Monitor`); vendored libebur128 is a cgo parity oracle only, not a runtime backend.
 - `tools/` — example-only helpers that pull from multiple top-level packages (e.g. `audioio` bridges devices+timeline, `devicepicker` is a TUI). Not for production import.
 
 ## Style rules
@@ -113,3 +114,23 @@ A bare `go test` of `libraries/aac/internal/parity_tests/...` without the tags
 builds none of the FDK-gated slices. See the "Integer parity convention"
 section atop `libraries/aac/internal/nativeaac/nativeaac.go`, and `LICENSING.md`
 for the FDK-AAC fence map.
+
+The `loudness` package (EBU R128 / ITU-R BS.1770-4 metering) follows the same
+convention as FLAC: the pure-Go `internal/r128` port is checked bit-exact
+against the vendored **libebur128 v1.2.6** C oracle (MIT, cgo, oracle only —
+not linked into a `CGO_ENABLED=0` build). Unlike `flac_strict`, the
+`loudness_strict` build tag does not change the Go port's own arithmetic (it
+is unconditionally FMA-free); it only selects the tight bit-exact tolerance
+for the parity assertions, paired with the same `-ffp-contract=off` scalar
+cgo oracle build as the other codecs:
+
+```
+MISE_EXPERIMENTAL=1 mise run //loudness:parity   # bit-exact parity gate, -tags=loudness_strict
+MISE_EXPERIMENTAL=1 mise run //loudness:test     # full loudness package suite, strict
+```
+
+A bare `go test ./loudness/...` (no tag/env) still runs everything except the
+tightest parity bound — the EBU Tech 3341/3342 compliance vectors and all
+other unit tests need no cgo oracle and no tag. See `loudness/README.md`'s
+Verification section for the tier breakdown and `LICENSING.md` for the
+libebur128 fence map.
