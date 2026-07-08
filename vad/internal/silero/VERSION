@@ -1,0 +1,198 @@
+Silero VAD — vendored model provenance and graph record
+========================================================
+
+Upstream:   https://github.com/snakers4/silero-vad
+Release:    v6.2.1 ("Make ONNX Runtime optional")
+Tag commit: 7e30209a3e901f9842f81b225f3e93d8199902b1
+License:    MIT (see LICENSE in this directory — upstream repo LICENSE,
+            "Copyright (c) 2020-present Silero Team")
+
+Fetched artifacts (2026-07-08)
+------------------------------
+
+1. ONNX oracle model (vendored at
+   vad/internal/parity_tests/silero_ort/testdata/silero_vad_16k_op15.onnx):
+
+   URL:    https://raw.githubusercontent.com/snakers4/silero-vad/v6.2.1/src/silero_vad/data/silero_vad_16k_op15.onnx
+   sha256: 7ed98ddbad84ccac4cd0aeb3099049280713df825c610a8ed34543318f1b2c49
+   size:   1289603 bytes
+
+2. Upstream safetensors (inspected, NOT vendored — see divergence note):
+
+   URL:    https://raw.githubusercontent.com/snakers4/silero-vad/v6.2.1/src/silero_vad/data/silero_vad_16k.safetensors
+   sha256: c59271c284ae9c8335d795d60e0bfdb71aaaceec578d9bd9ffc1b8153c319ea1
+   size:   1239748 bytes
+
+3. Vendored runtime weights (silero_vad_16k_op15.safetensors in this
+   directory, go:embed'ed by weights.go) — converted BY US from the
+   onnx initializers of artifact 1 with the script recorded below:
+
+   sha256: 3fb0f2f042d5c858dc88e79179f28478be2577777ec3736a68ecaa2f38ad9373
+   size:   1239972 bytes
+
+Divergence note: upstream safetensors ≠ onnx initializers
+---------------------------------------------------------
+
+The v6.2.1 release's silero_vad_16k.safetensors is NOT the same
+checkpoint as silero_vad_16k_op15.onnx. Per-tensor comparison
+(safetensors name → onnx initializer name):
+
+  stft_conv.weight     → model.stft.forward_basis_buffer      byte-identical
+  conv1.{weight,bias}  → model.encoder.0.reparam_conv.*       max|Δ| 4.03 / 1.66
+  conv2.{weight,bias}  → model.encoder.1.reparam_conv.*       max|Δ| 0.64 / 2.72
+  conv3.{weight,bias}  → model.encoder.2.reparam_conv.*       max|Δ| 8.37 / 8.82
+  conv4.{weight,bias}  → model.encoder.3.reparam_conv.*       max|Δ| 18.2 / 2.16
+  lstm_cell.weight_ih  → model.decoder.rnn.weight_ih          max|Δ| 1.01
+  lstm_cell.weight_hh  → model.decoder.rnn.weight_hh          max|Δ| 0.65
+  lstm_cell.bias_{ih,hh}→ model.decoder.rnn.bias_{ih,hh}      max|Δ| 0.084
+  final_conv.{weight,bias}→ model.decoder.decoder.2.*         max|Δ| 1.17 / 0.051
+
+Every tensor except the (fixed, analytic) STFT basis differs in 100%
+of elements with O(1) magnitudes — different training state, not fp
+noise. Since the pure-Go port is parity-gated against the ONNX oracle
+(per-window |Δp| ≤ 1e-4), the runtime weights MUST be the oracle's own
+initializers, so we converted them ourselves. The vendored
+silero_vad_16k_op15.safetensors carries the onnx initializer names
+verbatim and its float32 payloads are byte-identical to the onnx
+initializers (asserted by TestWeightsMatchONNXInitializers in the
+silero_ort parity slice).
+
+Conversion script (one-off, run 2026-07-08 with onnx==1.22.0,
+numpy==2.5.1, python 3.14.6):
+
+    #!/usr/bin/env python3
+    # Usage: python3 convert.py silero_vad_16k_op15.onnx out.safetensors
+    import json, struct, sys
+    import numpy as np
+    import onnx
+    from onnx import numpy_helper
+
+    m = onnx.load(sys.argv[1])
+    tensors = {}
+    for init in m.graph.initializer:
+        a = numpy_helper.to_array(init)
+        assert a.dtype == np.float32, init.name
+        tensors[init.name] = a
+
+    # safetensors: u64le header length | JSON header | raw data.
+    header, blobs, off = {}, [], 0
+    for name in sorted(tensors):
+        a = tensors[name]
+        raw = a.astype('<f4').tobytes()
+        header[name] = {"dtype": "F32", "shape": list(a.shape),
+                        "data_offsets": [off, off + len(raw)]}
+        blobs.append(raw)
+        off += len(raw)
+
+    hjson = json.dumps(header, sort_keys=True,
+                       separators=(',', ':')).encode()
+    with open(sys.argv[2], 'wb') as f:
+        f.write(struct.pack('<Q', len(hjson)))
+        f.write(hjson)
+        for b in blobs:
+            f.write(b)
+
+Graph record — silero_vad_16k_op15.onnx (dumped 2026-07-08)
+-----------------------------------------------------------
+
+ir_version 8, opset ai.onnx:15, producer pytorch 2.3.1.
+121 top-level nodes; the LSTM lives inside nested If subgraphs.
+
+Inputs:
+  input  f32 [batch, sequence]   — 64 context samples ++ 512 window = 576
+                                   (utils_vad.py OnnxWrapper convention:
+                                   context is the LAST 64 samples of the
+                                   previous 576-sample network input,
+                                   zeros at start/reset)
+  state  f32 [2, batch, 128]     — state[0]=h, state[1]=c (LSTM carry)
+  sr     i64 scalar              — VESTIGIAL in this 16k-only export:
+                                   used only as stateN += cast(sr*0)
+Outputs:
+  output f32 [batch, 1]          — speech probability
+  stateN f32 [2, batch, 128]     — concat(h', c')
+
+Effective dataflow for [1, 576] input (all If conditions are
+statically decided by the fixed shapes; branches taken noted):
+
+  1. STFT front end (/model/stft/*):
+     - Reflect-pad 64 samples at the END of the sequence (pad pair
+       (0, 64); the padding subgraph is TorchScript ceremony that
+       reshapes the constant [0,64] into ONNX pad format
+       [0,0,0,64]) → [1, 640]. Reflect: padded[576+j] = x[574-j].
+     - Unsqueeze axis 1 → [1, 1, 640].
+     - Conv1d, weight model.stft.forward_basis_buffer [258,1,256],
+       no bias, stride 128, pad 0 → [1, 258, 4]  (4 frames).
+     - Channels 0..128 = real part, 129..257 = imaginary part
+       (Slice axis 1 at 129; the slices on axes 0/2 are identity).
+     - magnitude = sqrt(re² + im²) (Pow 2 + Pow 2 + Add + Sqrt)
+       → [1, 129, 4].
+  2. Encoder — four Conv1d+ReLU stages (/model/encoder/N/):
+     - encoder.0: 129→128, k3, pad 1, stride 1 → [1, 128, 4]
+     - encoder.1: 128→ 64, k3, pad 1, stride 2 → [1,  64, 2]
+     - encoder.2:  64→ 64, k3, pad 1, stride 2 → [1,  64, 1]
+     - encoder.3:  64→128, k3, pad 1, stride 1 → [1, 128, 1]
+  3. Decoder RNN (/model/decoder/):
+     - If (last dim == 1) → then: Squeeze(-1) → [1, 128].
+     - If_1 (cast(state.shape[0]=2) → true) → then-branch sub_graph2
+       (the else branch rnn_1 with zero-initialised state is DEAD —
+       state always has dim0 == 2):
+       * h = state[0], c = state[1]  (Gather axis 0).
+       * Inner If (rank != 2 → false) → Identity; input unsqueezed
+         to [seq=1, batch, 128].
+       * ONNX LSTM node, hidden_size 128, default activations
+         (sigmoid, tanh, tanh), no peepholes, no clip, seq_len 1.
+         ITS W/R/B ARE BUILT IN-GRAPH from the PyTorch-packed
+         initializers — this resolves the iofc-vs-ifgo trap:
+           W = concat(weight_ih[0:128], weight_ih[384:512],
+                      weight_ih[128:384]) unsqueezed → [1, 512, 128]
+           R = same row shuffle of weight_hh      → [1, 512, 128]
+           B = concat(shuffled bias_ih, shuffled bias_hh) → [1, 1024]
+         i.e. the initializers model.decoder.rnn.{weight,bias}_{ih,hh}
+         are PyTorch LSTMCell-packed (row blocks i,f,g,o × 128) and
+         the graph permutes them to ONNX order (i,o,f,c). A pure-Go
+         port therefore consumes the initializers DIRECTLY with the
+         standard PyTorch cell equations:
+           i = σ(Wi·x + bi + Ui·h + vi)     rows   0..127
+           f = σ(Wf·x + bf + Uf·h + vf)     rows 128..255
+           g = tanh(Wg·x + bg + Ug·h + vg)  rows 256..383
+           o = σ(Wo·x + bo + Uo·h + vo)     rows 384..511
+           c' = f∘c + i∘g ;  h' = o∘tanh(c')
+       * h' = squeeze(Y_h), c' = squeeze(Y_c) → [1, 128] each.
+     - stateN = concat(unsqueeze(h',0), unsqueeze(c',0)) + cast(sr·0).
+  4. Output head (/model/decoder/decoder/, /model/):
+     - unsqueeze(h', -1) → [1, 128, 1] → ReLU →
+       Conv1d 128→1, k1 (model.decoder.decoder.2.{weight,bias}) →
+       Sigmoid → [1, 1, 1].
+     - If (shape[1] == 1) → Squeeze(axis 1) → [1, 1];
+       ReduceMean(axis 1, keepdims 0) → [1]; Unsqueeze(axis 1) →
+       output [1, 1]. (Mean over a singleton — identity.)
+
+Initializers (all f32; sha-verified against the vendored safetensors):
+  model.stft.forward_basis_buffer      [258, 1, 256]
+  model.encoder.0.reparam_conv.weight  [128, 129, 3]   .bias [128]
+  model.encoder.1.reparam_conv.weight  [ 64, 128, 3]   .bias [ 64]
+  model.encoder.2.reparam_conv.weight  [ 64,  64, 3]   .bias [ 64]
+  model.encoder.3.reparam_conv.weight  [128,  64, 3]   .bias [128]
+  model.decoder.rnn.weight_ih          [512, 128]
+  model.decoder.rnn.weight_hh          [512, 128]
+  model.decoder.rnn.bias_ih            [512]
+  model.decoder.rnn.bias_hh            [512]
+  model.decoder.decoder.2.weight       [  1, 128, 1]   .bias [  1]
+
+Differences from the provisional plan sketch: the STFT conv output is
+258 channels as sketched, but the reflect pad is 64 on the RIGHT of a
+576-sample (context ++ window) input — the 64-sample context is
+maintained OUTSIDE the graph by the caller (utils_vad.py OnnxWrapper),
+not by the pad. Everything else (conv stack, ReLUs, LSTM 128,
+sigmoid head) matches the sketch shapes after the dump pinned the
+strides/pads recorded above.
+
+Oracle runtime pin
+------------------
+
+onnxruntime 1.27.0 (github.com/microsoft/onnxruntime release v1.27.0
+official binaries: onnxruntime-osx-arm64-1.27.0.tgz for local runs,
+onnxruntime-linux-x64-1.27.0.tgz in CI), driven through
+github.com/yalue/onnxruntime_go v1.31.0. Reference probabilities in
+vad/testdata/silero_golden.json were produced by that exact pairing
+(see vad/internal/parity_tests/silero_ort/gen).
