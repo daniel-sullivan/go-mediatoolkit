@@ -173,16 +173,18 @@ CGO_ENABLED=0 go build ./loudness/...                      # confirms no cgo lea
 
 ## Benchmarks
 
-Go-vs-C comparison from `internal/parity_tests/benchcmp/bench_test.go`, run via `mise run //loudness:bench`: a 60 s synthetic stereo 48 kHz signal (two sines plus low-level noise), median of a single `-benchtime=2s` run on Apple M3 Pro (arm64). Both columns build the C oracle scalar and unfused (`-ffp-contract=off -fno-vectorize -fno-slp-vectorize -fno-unroll-loops`, no intrinsics) — this is an apples-to-apples scalar comparison, **not** native-vs-production-libebur128 (a production build with SIMD would be faster than the C column here).
+Go-vs-C comparison from `internal/parity_tests/benchcmp/bench_test.go`, run via `mise run //loudness:bench`: 60 s synthetic 48 kHz signals (sines plus low-level noise; stereo unless marked mono), a single `-benchtime=2s` run on Apple M3 Pro (arm64). Both columns build the C oracle scalar and unfused (`-ffp-contract=off -fno-vectorize -fno-slp-vectorize -fno-unroll-loops`, no intrinsics) — this is an apples-to-apples scalar comparison, **not** native-vs-production-libebur128 (a production build with SIMD would be faster than the C column here).
 
 | Benchmark | Go | C (scalar oracle) | Go/C | Go allocs/op |
 |---|---|---|---|---|
-| Integrated loudness, 60 s | 44.6 ms | 50.8 ms | **0.88×** (Go faster) | 33 (344 KB) |
-| True peak, 60 s | 303.8 ms | 184.7 ms | **1.64×** (Go slower) | 35 (1.1 MB) |
+| Integrated loudness, 60 s stereo | 49.8 ms | 52.9 ms | **0.94×** (Go faster) | 32 (344 KB) |
+| True peak, 60 s stereo | 156.7 ms | 195.6 ms | **0.80×** (Go faster) | 34 (1.1 MB) |
+| True peak, 60 s mono | 94.6 ms | 90.3 ms | **1.05×** (Go slower) | 34 (582 KB) |
 
 Notes:
-- **Integrated loudness** is dominated by the K-weighting filter and 100ms gating-block bookkeeping — both simple scalar loops — so the FMA-free Go port keeps pace with (and edges out) the scalar C oracle.
-- **True peak** is dominated by the 49-tap polyphase interpolator, run at up to 4× oversampling per channel; the Go port has had no SIMD pass (unlike e.g. `libraries/flac`'s NEON kernels), so it trails the scalar C here. This is a candidate for a future optimisation pass if true-peak throughput becomes a bottleneck.
+- **Integrated loudness** is dominated by the K-weighting filter and 100ms gating-block bookkeeping — both simple scalar loops — so the FMA-free Go port keeps pace with the scalar C oracle.
+- **True peak** is dominated by the 49-tap polyphase interpolator, run at up to 4× oversampling per channel. The Go port restructures the interpolator's delay line (a mirrored, channel-interleaved ring that makes every polyphase read window contiguous and wrap-free) and processes channel pairs as two SIMD lanes — NEON on arm64, SSE2 on amd64, with an always-compiled pure-Go kernel elsewhere and as the testable reference. The kernels use separate multiply and add instructions (never FMA), so every output remains **bit-identical** to scalar C libebur128 — the same `truepeak`/`e2e` parity slices assert bit-exactness over the optimised paths.
+- **Scope of the SIMD claim**: the pair kernel covers channels two at a time, so stereo and even channel counts run entirely on it; the stereo row above is what the SIMD kernels deliver (below the scalar C oracle). Mono — and the odd trailing channel of odd channel counts — runs the pure-Go scalar column kernel instead, so the mono row measures the unaccelerated path: roughly on par with the scalar C, as the table shows.
 
 Reproduce:
 
