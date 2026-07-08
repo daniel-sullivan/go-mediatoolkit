@@ -77,8 +77,9 @@ type interpFilter struct {
 // # State and the meter/limiter seam
 //
 // A TruePeaker owns exactly the state libebur128's `interpolator` owns:
-// the per-channel float32 delay lines (z[]) and the write cursor (zi).
-// That state PERSISTS across Process/Oversample calls, so feeding a
+// the delay line (a single mirrored, channel-interleaved float32 slice
+// z[], see the layout section below) and the write cursor (zi). That
+// state PERSISTS across Process/Oversample calls, so feeding a
 // stream in arbitrarily-sized chunks yields bit-identical results to
 // feeding it whole — the delay lines carry filter history across the
 // seam. Reset clears them.
@@ -105,14 +106,51 @@ type interpFilter struct {
 //
 // TruePeaker is not safe for concurrent use; a live meter/limiter owns
 // one per stream and drives it from a single goroutine.
+//
+// # Delay-line layout (mirrored + channel-interleaved)
+//
+// The per-channel delay lines are stored in ONE flat float32 slice z,
+// laid out as z[k*channels + c] for ring slot k and channel c. Two
+// optimisations shape this layout, both purely internal (the float32
+// values stored, and therefore every output bit, are identical to the
+// straightforward per-channel ring libebur128 uses):
+//
+//   - Channel interleaving. Storing channel c of ring slot k adjacently
+//     lets an arm64/amd64 kernel load a stereo pair with one 64-bit load
+//     and process both channels as SIMD lanes.
+//
+//   - Mirror doubling. The ring holds `delay` slots, but z is allocated
+//     for 2*delay slots and every incoming sample is written to BOTH slot
+//     zi AND slot zi+delay. The read window for a polyphase phase is
+//     index[t] taps back from the just-written slot; reading from the
+//     high copy at base = zi+delay means base-index[t] lands in
+//     [1, 2*delay-1] for every zi and every tap, so the modulo wrap that
+//     the C's `if (i < 0) i += delay` performs per tap is eliminated —
+//     the read is an unconditional descending walk. Because z[k] and
+//     z[k+delay] always hold the same sample (both are written every
+//     frame), z[base-index[t]] == z[(zi-index[t]) mod delay], bit for bit.
 type TruePeaker struct {
 	factor   int            // oversampling factor (2 or 4)
 	taps     int            // prototype FIR length (49)
 	channels int            // interleaved channel count
 	delay    int            // per-channel delay-line length
 	filters  []interpFilter // one polyphase sub-filter per phase (len factor)
-	z        [][]float32    // per-channel float32 delay lines (len channels)
-	zi       int            // shared delay-line write cursor
+	z        []float32      // mirrored, interleaved delay line (len 2*delay*channels)
+	zi       int            // shared delay-line write cursor (0..delay-1)
+
+	// SIMD fast-path descriptors, computed once in analyzeSIMD. simd is
+	// true when the polyphase decomposition matches the shape the
+	// channel-lane kernels assume: phase 0 is a single center tap with
+	// coefficient exactly 1.0, and every other phase reads a contiguous
+	// descending window (index[t] == t) of one fixed length. Both the 4x
+	// (49-tap) and 2x (49-tap) libebur128 configurations satisfy this; if
+	// a future configuration did not, simd stays false and Oversample
+	// falls back to the fully general pure-Go path (which handles any
+	// index[] via the same mirror addressing).
+	simd        bool      // eligible for the channel-lane kernels
+	phase0Index int       // delay-tap offset of phase 0's single center tap
+	simdCount   int       // tap count shared by phases 1..factor-1
+	coeffFlat   []float64 // phases 1..factor-1 coeffs, concatenated (len (factor-1)*simdCount)
 
 	// Reused scratch for Process, mirroring libebur128's preallocated
 	// resampler_buffer_input / resampler_buffer_output. Grown on demand;
@@ -161,14 +199,64 @@ func NewTruePeaker(sampleRate, channels int) *TruePeaker {
 		tp.filters[f].coeff = make([]float64, tp.delay)
 	}
 
-	// One delay line per channel, zero-initialised (calloc).
-	tp.z = make([][]float32, channels)
-	for c := range tp.z {
-		tp.z[c] = make([]float32, tp.delay)
-	}
+	// Mirrored (2x delay slots), channel-interleaved delay line,
+	// zero-initialised (calloc). See the TruePeaker doc comment.
+	tp.z = make([]float32, 2*tp.delay*channels)
 
 	tp.buildCoefficients()
+	tp.analyzeSIMD()
 	return tp
+}
+
+// analyzeSIMD inspects the polyphase decomposition buildCoefficients
+// produced and, when it matches the shape the channel-lane kernels
+// assume, fills in the fast-path descriptors (simd, phase0Index,
+// simdCount, coeffFlat). The required shape is:
+//
+//   - phase 0 has exactly one live tap whose coefficient is exactly 1.0
+//     (the prototype's center tap: sinc(0) * Hann(center) == 1.0);
+//   - every other phase has the same live-tap count, with index[t] == t
+//     for all t — i.e. its read window is the contiguous descending run
+//     of the most recent `count` delay slots.
+//
+// Both configurations libebur128 ever builds (49 taps at 4x: phase 0 =
+// {index 6, coeff 1.0}, phases 1-3 = 12 taps each at index [0..11]; 49
+// taps at 2x: phase 0 = {index 12, coeff 1.0}, phase 1 = 24 taps at
+// index [0..23]) satisfy this. The properties are verified here rather
+// than assumed so that if the tap count or factor selection ever
+// changed, Oversample would silently fall back to the fully general
+// path instead of miscomputing. coeffFlat concatenates phases
+// 1..factor-1's live coefficients ((factor-1)*simdCount float64s) so
+// the kernels index one flat array.
+func (tp *TruePeaker) analyzeSIMD() {
+	// factor is always 2 or 4 by construction (see NewTruePeaker's
+	// switch); no factor<2 guard is needed here.
+	f0 := &tp.filters[0]
+	if f0.count != 1 || f0.coeff[0] != 1.0 {
+		return
+	}
+	count := tp.filters[1].count
+	if count == 0 {
+		return
+	}
+	for f := 1; f < tp.factor; f++ {
+		filt := &tp.filters[f]
+		if filt.count != count {
+			return
+		}
+		for t := 0; t < filt.count; t++ {
+			if filt.index[t] != t {
+				return
+			}
+		}
+	}
+	tp.simd = true
+	tp.phase0Index = f0.index[0]
+	tp.simdCount = count
+	tp.coeffFlat = make([]float64, (tp.factor-1)*count)
+	for f := 1; f < tp.factor; f++ {
+		copy(tp.coeffFlat[(f-1)*count:f*count], tp.filters[f].coeff[:count])
+	}
 }
 
 // buildCoefficients ports interp_create's coefficient generation loop
@@ -254,51 +342,246 @@ func (tp *TruePeaker) Delay() int {
 // cannot contract the multiply-add into a single FMA. libebur128's oracle
 // is compiled with -ffp-contract=off, so it never fuses either; matching
 // that is what keeps the float32 outputs bit-identical.
+//
+// # Dispatch
+//
+// Oversample picks the fastest kernel whose arithmetic is provably
+// bit-identical to the reference loop:
+//
+//   - if the polyphase decomposition is not SIMD-shaped (see analyzeSIMD;
+//     never the case for libebur128's configurations), the fully general
+//     oversampleGeneric runs;
+//   - otherwise channels are processed in pairs by oversamplePair (a
+//     2-lane NEON/SSE2 kernel on arm64/amd64, the pure-Go
+//     oversamplePairGeneric elsewhere), with oversampleColumnScalar
+//     taking the odd trailing channel; mono is a single scalar column.
+//
+// Each column kernel touches only its own channels' interleaved slots
+// and advances a private copy of the cursor identically, so running them
+// sequentially over the same frame range is equivalent to the reference
+// frame-major order. Every kernel performs, per (channel, phase), the
+// same float32->float64 promotion, float64 multiply, float64 add
+// sequence in the same order as the reference loop — see each kernel's
+// comment for why its output is bit-identical.
 func (tp *TruePeaker) Oversample(in []float32, out []float32) int {
 	if tp == nil {
 		return 0
 	}
 	ch := tp.channels
 	frames := len(in) / ch
-	outStride := ch * tp.factor // interp->channels * interp->factor
+	if frames == 0 {
+		return 0
+	}
+	if !tp.simd {
+		return tp.oversampleGeneric(in, out)
+	}
+	var zi int
+	c := 0
+	for ; c+1 < ch; c += 2 {
+		zi = tp.oversamplePair(in, out, c)
+	}
+	if c < ch {
+		zi = tp.oversampleColumnScalar(in, out, c)
+	}
+	tp.zi = zi
+	return frames * tp.factor
+}
 
-	inIdx := 0
+// oversampleGeneric is the fully general reference kernel: it handles
+// any polyphase decomposition (arbitrary index[] contents) and any
+// channel count, using the mirrored delay line for wrap-free reads but
+// otherwise following interp_process's frame->channel->phase->tap nest
+// with the exact reference arithmetic. It is the fallback for non-SIMD-
+// shaped decompositions and the oracle the equality tests compare the
+// optimised kernels against. It updates tp.zi itself and returns the
+// output frame count.
+func (tp *TruePeaker) oversampleGeneric(in []float32, out []float32) int {
+	ch := tp.channels
+	frames := len(in) / ch
+	outStride := ch * tp.factor
+	delay := tp.delay
+	z := tp.z
+	zi := tp.zi
+
 	for frame := 0; frame < frames; frame++ {
-		base := frame * outStride // out advances by out_stride per input frame
-		for chn := 0; chn < ch; chn++ {
-			// Add sample to delay buffer: z[chan][zi] = *in++
-			tp.z[chn][tp.zi] = in[inIdx]
-			inIdx++
+		// Write this frame's samples to both mirrors.
+		row := in[frame*ch : frame*ch+ch]
+		lo := zi * ch
+		copy(z[lo:lo+ch], row)
+		hi := (zi + delay) * ch
+		copy(z[hi:hi+ch], row)
 
-			outp := base + chn // outp = out + chan
+		base := frame * outStride
+		for chn := 0; chn < ch; chn++ {
+			// top = flat offset of ring slot zi's high mirror, channel chn;
+			// tap index[t] reads slot zi-index[t] (mod delay) == flat
+			// top - index[t]*ch, always in range (see layout doc).
+			top := hi + chn
+			outp := base + chn
 			for f := 0; f < tp.factor; f++ {
 				acc := 0.0
 				filt := &tp.filters[f]
-				z := tp.z[chn]
-				for t := 0; t < filt.count; t++ {
-					// i = (int)zi - (int)index[t]; if (i<0) i += delay
-					i := tp.zi - filt.index[t]
-					if i < 0 {
-						i += tp.delay
-					}
+				index := filt.index[:filt.count]
+				coeff := filt.coeff[:filt.count]
+				for t := range index {
 					// acc += (double) z[i] * coeff[t]
 					// The inner float64() promotes the float32 delay sample
 					// (as C's (double) cast does); the outer float64()
 					// around the product is the FMA-suppression barrier.
-					acc = float64(float64(z[i])*filt.coeff[t]) + acc
+					acc = float64(float64(z[top-index[t]*ch])*coeff[t]) + acc
 				}
 				out[outp] = float32(acc) // *outp = (float) acc
 				outp += ch               // outp += interp->channels
 			}
 		}
 		// interp->zi++ with wrap at delay.
-		tp.zi++
-		if tp.zi == tp.delay {
-			tp.zi = 0
+		zi++
+		if zi == delay {
+			zi = 0
 		}
 	}
 
+	tp.zi = zi
 	return frames * tp.factor
+}
+
+// oversampleColumnScalar processes ONE channel column (c0) of the
+// interleaved stream through the SIMD-shaped fast path in pure Go: the
+// mirrored delay line makes every phase's read window the contiguous
+// descending run of slots ending at the just-written one, so the tap
+// loop is a branch-free pointer walk. It reads its private cursor from
+// tp.zi, does NOT write it back (Oversample commits the cursor once
+// after all columns), and returns the final cursor value.
+//
+// Bit-exactness vs the reference loop, per output sample:
+//
+//   - phases 1..factor-1 run the identical per-tap sequence
+//     float64(float64(z)*coeff) + acc in the same ascending-tap order —
+//     only the address computation differs;
+//   - phase 0 (single tap, coefficient exactly 1.0) skips the multiply:
+//     float64(v)*1.0 == float64(v) for every value a float32 can
+//     promote to (multiplication by one is exact), and the reference's
+//     `+ acc` with acc == 0.0 is kept because +0.0 canonicalises a
+//     -0.0 product to +0.0, which a bare copy would miss.
+func (tp *TruePeaker) oversampleColumnScalar(in []float32, out []float32, c0 int) int {
+	ch := tp.channels
+	frames := len(in) / ch
+	outStride := ch * tp.factor
+	factor := tp.factor
+	delay := tp.delay
+	count := tp.simdCount
+	coeff := tp.coeffFlat
+	p0 := tp.phase0Index * ch
+	z := tp.z
+	zi := tp.zi
+
+	for frame := 0; frame < frames; frame++ {
+		s := in[frame*ch+c0]
+		top := (zi+delay)*ch + c0 // high-mirror slot zi, channel c0
+		z[zi*ch+c0] = s
+		z[top] = s
+
+		outp := frame*outStride + c0
+		// Phase 0: single center tap, coeff exactly 1.0 (see doc above).
+		out[outp] = float32(float64(z[top-p0]) + 0.0)
+		outp += ch
+
+		cb := 0
+		for f := 1; f < factor; f++ {
+			acc := 0.0
+			// Per-phase coefficient window: reslicing to exactly `count`
+			// elements lets the compiler prove t < len(phaseCoeff) from the
+			// loop bound alone, eliminating the coeff[cb+t] bounds check
+			// that a raw coeff[cb+t] index carries on every tap. z's own
+			// tap index (ptr, strided by the runtime channel count ch)
+			// can't be proven this way — a non-constant stride defeats the
+			// compiler's induction-variable range check — so it keeps its
+			// per-tap check.
+			phaseCoeff := coeff[cb : cb+count]
+			ptr := top
+			for t := 0; t < count; t++ {
+				acc = float64(float64(z[ptr])*phaseCoeff[t]) + acc
+				ptr -= ch
+			}
+			out[outp] = float32(acc)
+			outp += ch
+			cb += count
+		}
+
+		zi++
+		if zi == delay {
+			zi = 0
+		}
+	}
+	return zi
+}
+
+// oversamplePairGeneric is the pure-Go 2-lane pair kernel: channels c0
+// and c0+1 are processed together as the two lanes the NEON/SSE2
+// kernels vectorise, tap-major so the per-tap address and coefficient
+// work is shared between the lanes. Each lane's arithmetic is the exact
+// per-channel sequence of oversampleColumnScalar (and therefore of the
+// reference loop) — the lanes never mix, they only share addressing. On
+// arm64/amd64 the assembly oversamplePair shadows this function;
+// keeping it compiled everywhere lets the equality tests run asm vs
+// pure Go on the same machine. Cursor protocol matches
+// oversampleColumnScalar: reads tp.zi, returns the final cursor,
+// never writes tp.zi.
+func (tp *TruePeaker) oversamplePairGeneric(in []float32, out []float32, c0 int) int {
+	ch := tp.channels
+	frames := len(in) / ch
+	outStride := ch * tp.factor
+	factor := tp.factor
+	delay := tp.delay
+	count := tp.simdCount
+	coeff := tp.coeffFlat
+	p0 := tp.phase0Index * ch
+	z := tp.z
+	zi := tp.zi
+
+	for frame := 0; frame < frames; frame++ {
+		s0 := in[frame*ch+c0]
+		s1 := in[frame*ch+c0+1]
+		top := (zi+delay)*ch + c0
+		lo := zi*ch + c0
+		z[lo] = s0
+		z[lo+1] = s1
+		z[top] = s0
+		z[top+1] = s1
+
+		outp := frame*outStride + c0
+		// Phase 0 (see oversampleColumnScalar for the 1.0-coeff proof).
+		out[outp] = float32(float64(z[top-p0]) + 0.0)
+		out[outp+1] = float32(float64(z[top-p0+1]) + 0.0)
+		outp += ch
+
+		cb := 0
+		for f := 1; f < factor; f++ {
+			acc0 := 0.0
+			acc1 := 0.0
+			// See oversampleColumnScalar for why this reslice eliminates
+			// the coeff[cb+t] bounds check but z's stride-ch tap index
+			// cannot be proven the same way.
+			phaseCoeff := coeff[cb : cb+count]
+			ptr := top
+			for t := 0; t < count; t++ {
+				c := phaseCoeff[t]
+				acc0 = float64(float64(z[ptr])*c) + acc0
+				acc1 = float64(float64(z[ptr+1])*c) + acc1
+				ptr -= ch
+			}
+			out[outp] = float32(acc0)
+			out[outp+1] = float32(acc1)
+			outp += ch
+			cb += count
+		}
+
+		zi++
+		if zi == delay {
+			zi = 0
+		}
+	}
+	return zi
 }
 
 // Process scans one interleaved float64 buffer for inter-sample true
@@ -378,20 +661,17 @@ func (tp *TruePeaker) Process(samples []float64, peaks []float64) {
 	}
 }
 
-// Reset clears the per-channel delay lines and the write cursor,
-// returning the interpolator to its just-constructed state (all filter
-// history zeroed). Coefficients and buffer sizes are retained. It does
-// not touch any caller-owned peak accumulators. No-op on a nil bypass
-// TruePeaker.
+// Reset clears the delay line (both mirrors of every channel column)
+// and the write cursor, returning the interpolator to its
+// just-constructed state (all filter history zeroed). Coefficients and
+// buffer sizes are retained. It does not touch any caller-owned peak
+// accumulators. No-op on a nil bypass TruePeaker.
 func (tp *TruePeaker) Reset() {
 	if tp == nil {
 		return
 	}
-	for c := range tp.z {
-		z := tp.z[c]
-		for i := range z {
-			z[i] = 0
-		}
+	for i := range tp.z {
+		tp.z[i] = 0
 	}
 	tp.zi = 0
 }

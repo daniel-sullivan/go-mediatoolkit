@@ -5,6 +5,14 @@
 // NEON float64 vector instructions not in Go's assembler.
 // Encoding: see ARM ARM C7.2. Verified against Go's arm64enc.s TODO comments.
 //
+// NOTE: VFADD_2D and VFMUL_2D are byte-identical to the macros of the
+// same names in loudness/internal/r128/truepeak_arm64.s. They are
+// duplicated rather than shared via a header because a cross-package
+// #include, while accepted by the assembler, is not tracked by the go
+// build cache (edits to the shared file would not rebuild the
+// including package). If you change an encoding here, update that
+// file to match, and vice versa.
+//
 // FADD Vd.2D, Vn.2D, Vm.2D:  0x4E60D400 | (Vm<<16) | (Vn<<5) | Vd
 // FSUB Vd.2D, Vn.2D, Vm.2D:  0x4EE0D400 | (Vm<<16) | (Vn<<5) | Vd
 // FMUL Vd.2D, Vn.2D, Vm.2D:  0x6E60DC00 | (Vm<<16) | (Vn<<5) | Vd
