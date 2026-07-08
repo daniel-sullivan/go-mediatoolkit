@@ -1,6 +1,8 @@
 package mixer
 
 import (
+	"math"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -10,6 +12,8 @@ import (
 
 	"github.com/daniel-sullivan/go-mediatoolkit/consts"
 
+	"github.com/daniel-sullivan/go-mediatoolkit/generators"
+	"github.com/daniel-sullivan/go-mediatoolkit/loudness"
 	"github.com/daniel-sullivan/go-mediatoolkit/mutations"
 	"github.com/daniel-sullivan/go-mediatoolkit/timeline"
 )
@@ -531,4 +535,366 @@ func (b *boundedTimeline) Pull(dst []float64) (int, error) {
 
 func (b *boundedTimeline) Duration() time.Duration {
 	return time.Duration(b.frames) * time.Second / time.Duration(b.SampleRate())
+}
+
+// recordingProcessor is a Processor whose transform is driven by an
+// optional operation func, mirroring timeline's countingProcessor
+// test helper. It always records the call count, the length it last
+// saw, and the running total of samples seen, which covers both the
+// chain-ordering and chunk-continuity tests below.
+type recordingProcessor struct {
+	calls     int
+	lastN     int
+	totalSeen int
+	operation func(samples []float64)
+}
+
+func (p *recordingProcessor) Process(samples []float64) {
+	p.calls++
+	p.lastN = len(samples)
+	p.totalSeen += len(samples)
+	if p.operation != nil {
+		p.operation(samples)
+	}
+}
+
+func (p *recordingProcessor) Reset() {
+	p.calls = 0
+	p.lastN = 0
+	p.totalSeen = 0
+}
+
+func TestMixerProcessorChainRunsBeforeSaturator(t *testing.T) {
+	// Sets every sample to 2.0, well past SoftSaturate's threshold.
+	// If the chain ran after the saturator the output would stay at
+	// exactly 2.0; running it before means the saturator gets the
+	// chance to pull the result back under 1.0.
+	setTwo := &recordingProcessor{operation: func(s []float64) {
+		for i := range s {
+			s[i] = 2.0
+		}
+	}}
+	m, err := New(Config{
+		SampleRate:  consts.SampleRate48000,
+		Channels:    1,
+		RingFrames:  1024,
+		ChunkFrames: 64,
+		Processors:  []mutations.Processor{setTwo},
+	})
+	require.NoError(t, err)
+	defer m.Close()
+
+	buf := waitForSteadyState(t, m, 64, time.Second, func(v float64) bool {
+		return v > mutations.SoftSaturationThreshold && v < 1.0
+	})
+	for i, v := range buf {
+		assert.Less(t, v, 1.0, "frame %d: saturator must run after the processor chain", i)
+		assert.Greater(t, v, mutations.SoftSaturationThreshold, "frame %d", i)
+	}
+
+	// setTwo.calls is only safe to read once the mix goroutine has
+	// stopped touching it — see Config.Processors' documented
+	// contract on concurrent readout.
+	require.NoError(t, m.Close())
+	assert.Greater(t, setTwo.calls, 0)
+}
+
+func TestMixerProcessorChainRunsInDeclarationOrder(t *testing.T) {
+	addQuarter := func() *recordingProcessor {
+		return &recordingProcessor{operation: func(s []float64) {
+			for i := range s {
+				s[i] += 0.25
+			}
+		}}
+	}
+	timesTwo := func() *recordingProcessor {
+		return &recordingProcessor{operation: func(s []float64) {
+			for i := range s {
+				s[i] *= 2
+			}
+		}}
+	}
+
+	tests := []struct {
+		name  string
+		chain func() []mutations.Processor
+		want  float64
+	}{
+		{
+			name:  "add then scale",
+			chain: func() []mutations.Processor { return []mutations.Processor{addQuarter(), timesTwo()} },
+			want:  (0.1 + 0.25) * 2,
+		},
+		{
+			name:  "scale then add",
+			chain: func() []mutations.Processor { return []mutations.Processor{timesTwo(), addQuarter()} },
+			want:  0.1*2 + 0.25,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			m, err := New(Config{
+				SampleRate:  consts.SampleRate48000,
+				Channels:    1,
+				RingFrames:  1024,
+				ChunkFrames: 64,
+				Processors:  tc.chain(),
+			})
+			require.NoError(t, err)
+			defer m.Close()
+
+			c := clip(t, repeated(0.1, 200000), consts.SampleRate48000, 1)
+			_, err = m.AddSource(c.Playhead())
+			require.NoError(t, err)
+
+			buf := waitForSteadyState(t, m, 64, time.Second, func(v float64) bool {
+				return v > tc.want-0.01 && v < tc.want+0.01
+			})
+			for i, v := range buf {
+				assert.InDelta(t, tc.want, v, 1e-9, "frame %d", i)
+			}
+		})
+	}
+}
+
+func TestMixerProcessorSeesEveryChunkIncludingSilence(t *testing.T) {
+	const chunkFrames = 32
+	const chunks = 8 // RingFrames chosen as an exact multiple of
+	// chunkFrames (and already a power of two) so the chunk count
+	// through the chain is deterministic — see buffers.NewRing.
+	proc := &recordingProcessor{}
+	m, err := New(Config{
+		SampleRate:  consts.SampleRate48000,
+		Channels:    1,
+		RingFrames:  chunkFrames * chunks,
+		ChunkFrames: chunkFrames,
+		Processors:  []mutations.Processor{proc},
+	})
+	require.NoError(t, err)
+	defer m.Close()
+
+	// No tracks are ever added: every chunk the mix goroutine
+	// produces is silence. The chain must still run once per chunk,
+	// contiguously, until the ring reaches capacity.
+	require.Eventually(t, func() bool {
+		return m.ring.Len() >= chunkFrames*chunks
+	}, time.Second, 2*time.Millisecond, "ring should fill with silence-only chunks")
+
+	// proc's fields are only safe to read once the mix goroutine has
+	// stopped touching them — see Config.Processors' documented
+	// contract on concurrent readout.
+	require.NoError(t, m.Close())
+	assert.Equal(t, chunks, proc.calls, "one Process call per chunk written to the ring")
+	assert.Equal(t, chunkFrames*chunks, proc.totalSeen, "every written sample passed through the chain")
+	assert.Equal(t, chunkFrames, proc.lastN, "each call sees one whole, frame-aligned chunk")
+}
+
+func TestMixerNilOrEmptyProcessorsUnchanged(t *testing.T) {
+	tests := []struct {
+		name       string
+		processors []mutations.Processor
+	}{
+		{name: "nil", processors: nil},
+		{name: "empty", processors: []mutations.Processor{}},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			m, err := New(Config{
+				SampleRate:  consts.SampleRate48000,
+				Channels:    1,
+				RingFrames:  1024,
+				ChunkFrames: 64,
+				Processors:  tc.processors,
+			})
+			require.NoError(t, err)
+			defer m.Close()
+
+			// Same setup and expectation as TestMixerSumsTwoTracks:
+			// nil/empty Processors must not change existing mixing
+			// behaviour.
+			a := clip(t, repeated(0.3, 200000), consts.SampleRate48000, 1)
+			b := clip(t, repeated(0.4, 200000), consts.SampleRate48000, 1)
+			_, err = m.AddSource(a.Playhead())
+			require.NoError(t, err)
+			_, err = m.AddSource(b.Playhead())
+			require.NoError(t, err)
+
+			buf := waitForSteadyState(t, m, 64, time.Second, func(v float64) bool {
+				return v > 0.65 && v < 0.75
+			})
+			for i, v := range buf {
+				assert.InDelta(t, 0.7, v, 1e-9, "frame %d", i)
+			}
+		})
+	}
+}
+
+func TestMixerNilProcessorElementErrors(t *testing.T) {
+	valid := &recordingProcessor{}
+	_, err := New(Config{
+		SampleRate: consts.SampleRate48000,
+		Channels:   1,
+		Processors: []mutations.Processor{valid, nil},
+	})
+	assert.ErrorIs(t, err, ErrNilProcessor)
+
+	_, err = New(Config{
+		SampleRate: consts.SampleRate48000,
+		Channels:   1,
+		Processors: []mutations.Processor{nil},
+	})
+	assert.ErrorIs(t, err, ErrNilProcessor)
+}
+
+func TestMixerProcessorChainRaceUnderConcurrentTrackOps(t *testing.T) {
+	proc := &recordingProcessor{}
+	m, err := New(Config{
+		SampleRate:  consts.SampleRate48000,
+		Channels:    1,
+		RingFrames:  1024,
+		ChunkFrames: 64,
+		Processors:  []mutations.Processor{proc},
+	})
+	require.NoError(t, err)
+	defer m.Close()
+
+	c := clip(t, repeated(0.2, 1<<20), consts.SampleRate48000, 1)
+
+	var wg sync.WaitGroup
+	stop := make(chan struct{})
+
+	// Continuously add, gain-adjust, and remove tracks — from another
+	// goroutine, per the documented AddSource/TrackHandle contract —
+	// while the mix goroutine runs the processor chain every
+	// iteration. `go test -race` is the actual assertion here.
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for {
+			select {
+			case <-stop:
+				return
+			default:
+			}
+			h, err := m.AddSource(c.Playhead())
+			if err != nil {
+				return
+			}
+			h.SetGain(0.5)
+			h.SetGain(1.0)
+			h.Remove()
+		}
+	}()
+
+	// Keep draining so the mix goroutine keeps iterating (and
+	// therefore keeps invoking the processor chain) throughout the
+	// churn above, rather than blocking once the ring fills.
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		buf := make([]float64, 64)
+		deadline := time.Now().Add(200 * time.Millisecond)
+		for time.Now().Before(deadline) {
+			m.Fill(buf)
+		}
+	}()
+
+	time.Sleep(200 * time.Millisecond)
+	close(stop)
+	wg.Wait()
+
+	// proc.calls is only safe to read once the mix goroutine has
+	// stopped touching it — see Config.Processors' documented
+	// contract on concurrent readout.
+	require.NoError(t, m.Close())
+	assert.Greater(t, proc.calls, 0, "processor should have run while tracks churned concurrently")
+}
+
+// TestMixerMonitorReadsPlausibleLoudnessForSteadyTone installs a
+// loudness.Monitor on the master bus alongside a steady-level tone
+// track, and checks two things at once: that the Monitor's live
+// readings land close to an offline loudness.Measure of the identical
+// signal (a sanity check that the master-bus wiring — Config.Processors
+// running on the exact pre-saturator samples — actually delivers the
+// track's true loudness to the Monitor), and that the Monitor's reader
+// methods are safe to call from another goroutine while the mix
+// goroutine keeps calling Process concurrently (the point of Monitor's
+// mutex, exercised here under -race).
+func TestMixerMonitorReadsPlausibleLoudnessForSteadyTone(t *testing.T) {
+	const (
+		sampleRate  = consts.SampleRate48000
+		channels    = 2
+		toneSeconds = 8
+		peakDBFS    = -20.0
+	)
+
+	// Build a steady stereo tone (both channels identical, so the
+	// mixer's mono/stereo adapter never engages and the Monitor sees
+	// exactly this array, chunked). -20 dBFS peak keeps it well clear
+	// of SoftSaturate's threshold, so the saturator downstream of the
+	// Monitor is a no-op and doesn't matter for this comparison.
+	mono := generators.Sine(consts.FreqNoteA4, toneSeconds*time.Second, sampleRate)
+	mutations.ApplyGain(mono.Data, mutations.Decibels(peakDBFS))
+	stereo := make([]float64, len(mono.Data)*channels)
+	for i, v := range mono.Data {
+		stereo[i*channels] = v
+		stereo[i*channels+1] = v
+	}
+
+	want, err := loudness.Measure(mutations.Audio{Data: stereo, SampleRate: sampleRate, Channels: channels})
+	require.NoError(t, err)
+	require.False(t, math.IsInf(want.Integrated, -1), "test tone must not measure as silence")
+
+	mon, err := loudness.NewMonitor(sampleRate, channels, loudness.ModeShortTerm)
+	require.NoError(t, err)
+
+	m, err := New(Config{
+		SampleRate: sampleRate,
+		Channels:   channels,
+		RingFrames: 1 << 15,
+		Processors: []mutations.Processor{mon},
+	})
+	require.NoError(t, err)
+	defer m.Close()
+
+	c := clip(t, stereo, sampleRate, channels)
+	_, err = m.AddSource(c.Playhead())
+	require.NoError(t, err)
+
+	// Read the monitor continuously from another goroutine while the
+	// mix goroutine keeps calling mon.Process — this is the actual
+	// -race assertion for Monitor's documented concurrent-readout
+	// contract.
+	stopReads := make(chan struct{})
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for {
+			select {
+			case <-stopReads:
+				return
+			default:
+			}
+			_, _ = mon.ShortTerm()
+			_, _ = mon.Momentary()
+		}
+	}()
+
+	// Pull 6 of the tone's 8 seconds (margin against the clip ending
+	// mid-pull), waiting for the ring to actually hold each chunk
+	// before draining it — draining faster than the mix goroutine
+	// produces would starve it and dilute the reading with silence.
+	buf := make([]float64, sampleRate/10*channels) // 100ms per pull
+	for i := 0; i < (toneSeconds-2)*10; i++ {
+		drainWithTimeout(t, m, buf, time.Second)
+	}
+
+	close(stopReads)
+	wg.Wait()
+
+	st, err := mon.ShortTerm()
+	require.NoError(t, err)
+	assert.InDelta(t, want.Integrated, st, 1.0,
+		"monitor short-term should read within 1 LU of an offline Measure of the same tone")
 }
