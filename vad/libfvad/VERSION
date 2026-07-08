@@ -1,0 +1,30 @@
+libfvad master (commit 532ab666c20d3cfda38bca63abbb0f152706c369)
+
+Upstream: https://github.com/dpirch/libfvad
+Pinned via `git ls-remote https://github.com/dpirch/libfvad master` on
+2026-07-08, which returned this commit as refs/heads/master (dpirch/libfvad
+has no tagged releases).
+
+Vendored files (2562 LOC / 21 files, verbatim, no modifications):
+  include/fvad.h
+  src/fvad.c, src/common.h
+  src/vad/{vad_core,vad_filterbank,vad_gmm,vad_sp}.{c,h}
+  src/signal_processing/{division_operations,energy,get_scaling_square,
+    resample_48khz,resample_by_2_internal(+.h),resample_fractional,
+    spl_inl(+.h)}.c + signal_processing_library.h
+  LICENSE, PATENTS
+
+libfvad is itself an extraction of the voice-activity-detection component
+from the WebRTC project's legacy GMM VAD (webrtc/common_audio/vad and
+webrtc/common_audio/signal_processing), repackaged as a small standalone
+library with no other WebRTC dependencies. It is pure fixed-point integer
+arithmetic (no float/double anywhere in the VAD path), so the Go port in
+vad/internal/fvad is bit-exact with no floating-point build-tag ceremony.
+
+Compiled ONLY by the parity_tests cgo slices (vad/internal/parity_tests/
+fvad_sp, fvad_filterbank, fvad_gmm, fvad_core, fvad_e2e) — no root cgo
+bridge, mirroring the loudness/libebur128 and libraries/flac/libflac
+vendoring pattern.
+
+License: BSD-3-Clause (see LICENSE) plus a WebRTC-inherited patent grant
+(see PATENTS). Not modified from upstream.

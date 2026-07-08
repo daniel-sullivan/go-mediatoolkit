@@ -9,6 +9,7 @@ require (
 	github.com/ebitengine/purego v0.10.0
 	github.com/jfreymuth/pulse v0.1.1
 	github.com/stretchr/testify v1.11.1
+	github.com/yalue/onnxruntime_go v1.31.0
 	golang.org/x/sys v0.43.0
 	golang.org/x/term v0.42.0
 )
