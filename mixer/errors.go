@@ -8,4 +8,5 @@ var (
 	ErrNilSource           = errors.New("mixer: source is nil")
 	ErrMixerClosed         = errors.New("mixer: mixer is closed")
 	ErrUnsupportedChannels = errors.New("mixer: channel conversion unsupported (only mono↔stereo)")
+	ErrNilProcessor        = errors.New("mixer: Processors contains a nil element")
 )

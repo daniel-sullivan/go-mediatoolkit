@@ -42,6 +42,7 @@
 package mixer
 
 import (
+	"slices"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -102,11 +103,82 @@ type Config struct {
 	LiveRingFrames int
 
 	// Saturator is applied to every mixed sample before it enters
-	// the output ring. Nil selects mutations.SoftSaturate. Other
-	// built-in options are mutations.HardClip and
-	// mutations.TanhSaturate; callers may also supply their own
-	// mutations.Saturator function.
+	// the output ring. Nil selects mutations.SoftSaturate (a soft-knee
+	// shaper, NOT a passthrough). Other built-in options are
+	// mutations.HardClip and mutations.TanhSaturate; callers may also
+	// supply their own mutations.Saturator function.
+	//
+	// Interaction with a level-managing Processor: the default
+	// SoftSaturate begins shaping at 0.8 linear (≈ −1.9 dBFS), which
+	// sits BELOW a −1 dBTP ceiling, so it will recolour the output of a
+	// loudness.Limiter / Leveller / Normalizer placed in Processors —
+	// re-adding the very peaks the level manager just controlled. When
+	// Processors already manages level, set Saturator to
+	// mutations.HardClip instead: it is transparent below full scale and
+	// keeps only a hard safety net at ±1.0.
 	Saturator mutations.Saturator
+
+	// Processors is an ordered master-bus effects chain. Each mix
+	// iteration, every Processor's Process is called in slice order
+	// against the summed chunk (all tracks added with their gains),
+	// immediately before Saturator. Nil or empty means no master
+	// processing — behaviour is identical to a mixer built before
+	// this field existed.
+	//
+	// Each Processor runs on the mix goroutine, so Process must not
+	// block or allocate unboundedly; it sees exactly one contiguous,
+	// frame-aligned chunk per call, sized ChunkFrames*Channels.
+	//
+	// Construction and ownership:
+	//
+	//   - Every Processor must be constructed for this Config's
+	//     SampleRate and Channels — a processor built for a different
+	//     rate or channel count will silently misbehave.
+	//   - A Processor must not be shared with any other stream (another
+	//     Mixer, a timeline.EffectSource, a direct Process caller,
+	//     etc.). Processors carry per-stream state (delay lines, filter
+	//     history, running meters); sharing one across streams corrupts
+	//     that state and is also a data race unless the processor is
+	//     independently documented as goroutine-safe.
+	//   - The mixer never calls a processor's Reset. The master bus is
+	//     modelled as one continuous stream from New to Close, so there
+	//     is no seek/loop boundary at which a reset would make sense.
+	//     Callers who need fresh per-stream processor state (e.g. to
+	//     start a new logical session) should build a new Mixer rather
+	//     than attempt to reset processors on a running one.
+	//
+	// Latency and idle behaviour:
+	//
+	//   - A latency-introducing processor (e.g. a lookahead limiter)
+	//     delays the entire mixer output by its lookahead, exactly like
+	//     inserting the same processor via timeline.EffectSource on a
+	//     single track — plan for that added delay end to end. On Close
+	//     the final latency-worth of audio still inside such a
+	//     processor's delay line is discarded rather than flushed — this
+	//     is inherent to live operation (the output ring likewise
+	//     discards whatever audio has not yet been read). A finite render
+	//     that must preserve that tail belongs in
+	//     mutations.Audio.RenderWithEffects or a
+	//     timeline.EffectSource.WithTail, which append the tail of
+	//     silence needed to drain the delay line; the live mixer has no
+	//     "end of stream" at which to do so.
+	//   - Processors run on every chunk, including chunks where no
+	//     tracks are scheduled or all tracks are silent; they will see
+	//     that idle silence as ordinary input. Processors that expose
+	//     metering or triggering behaviour (e.g. a loudness monitor)
+	//     should gate on that silence themselves if idle periods should
+	//     not count toward their measurements.
+	//
+	// Concurrent readout:
+	//
+	//   - Reading a processor's internal state (e.g. calling meter
+	//     accessor methods) from outside the mix goroutine is only
+	//     safe after Close has returned, unless the processor is
+	//     specifically documented as goroutine-safe (for example a
+	//     metering monitor built for concurrent reads). Prefer such a
+	//     goroutine-safe processor whenever live readout while the
+	//     mixer is running is required.
+	Processors []mutations.Processor
 }
 
 // Mixer combines multiple Sources into one output stream.
@@ -120,6 +192,7 @@ type Mixer struct {
 
 	liveRingSamples int // fill cap when any live source is registered
 	saturator       mutations.Saturator
+	processors      []mutations.Processor // master-bus chain, run() only
 
 	pending chan mixerOp
 	stop    chan struct{}
@@ -165,6 +238,11 @@ func New(cfg Config) (*Mixer, error) {
 	if cfg.Saturator == nil {
 		cfg.Saturator = mutations.SoftSaturate
 	}
+	for _, p := range cfg.Processors {
+		if p == nil {
+			return nil, ErrNilProcessor
+		}
+	}
 	m := &Mixer{
 		sampleRate:      cfg.SampleRate,
 		channels:        cfg.Channels,
@@ -172,6 +250,7 @@ func New(cfg Config) (*Mixer, error) {
 		idleTick:        cfg.IdleTick,
 		liveRingSamples: cfg.LiveRingFrames * cfg.Channels,
 		saturator:       cfg.Saturator,
+		processors:      slices.Clone(cfg.Processors),
 		ring:            buffers.NewRing(cfg.RingFrames * cfg.Channels),
 		pending:         make(chan mixerOp, 32),
 		stop:            make(chan struct{}),
@@ -354,6 +433,9 @@ func (m *Mixer) run() {
 		}
 		m.tracks = kept
 
+		for _, p := range m.processors {
+			p.Process(accum)
+		}
 		mutations.ApplySaturator(accum, m.saturator)
 
 		// Write to ring.
