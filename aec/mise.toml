@@ -1,0 +1,43 @@
+# AEC package — mise tasks
+#
+# This package's own Go code is plain, cgo-free, and needs nothing
+# beyond `go build`/`go test`. The tasks below concern the *opt-in*
+# AEC3 C++ parity oracle (see aec/oracle/VERSION) used by the slices
+# under aec/internal/parity_tests/ (smoke, plus the bit-exact Go-port
+# slices fft, blocking, bandsplit, adaptivefir, subtractor, decimator,
+# matchedfilter, delaypipe, aecstate, erle, reverb, echoremover,
+# suppressor, and the top-level integration slice ec3) — fetched into a
+# per-user cache on demand, never vendored, and entirely excluded from
+# a default `go build`/`go test`.
+#
+# Task names below are bare (e.g. `parity`, `vet`). Under monorepo mode
+# (`experimental_monorepo_root = true` in the root mise.toml +
+# MISE_EXPERIMENTAL=1), mise auto-prefixes these with the path to this
+# config so they appear as `//aec:parity` etc.
+#
+# Build tag
+# ---------
+#   aec_oracle — gates each parity slice's real cgo test files
+#                (cgo.go, shim.h, shim.cc, parity_test.go) into the
+#                build. Without it (or without cgo), skip_test.go
+#                compiles instead and each package's single test just
+#                t.Skips with fetch instructions. Unlike this repo's
+#                other cgo parity oracles (libopus/libFLAC/libebur128,
+#                all vendored so they always compile), the AEC3 oracle
+#                is fetched on demand and its headers/libs may not
+#                exist on disk at all — a runtime t.Skip can't recover
+#                from a missing-header compile failure, so the split
+#                happens at the build-constraint level instead. See
+#                aec/internal/parity_tests/smoke/cgo.go's doc comment.
+
+[tasks."oracle:fetch"]
+description = "Fetch + meson-build the AEC3 C++ oracle (webrtc-audio-processing v2.1) into the local cache. Network access required; safe to re-run (idempotent)."
+run = "./oracle/fetch.sh"
+
+[tasks."parity"]
+description = "Run all AEC3 parity slices (smoke, fft, blocking, bandsplit, adaptivefir, subtractor, decimator, matchedfilter, delaypipe, aecstate, erle, reverb, echoremover, suppressor, ec3) against the locally fetched+built C++ oracle. Requires oracle:fetch to have been run first."
+run = "./internal/parity_tests/run.sh"
+
+[tasks."vet"]
+description = "Run go vet on the aec package (CGO_ENABLED=0, matches the default no-cgo build)"
+run = "CGO_ENABLED=0 go vet ./..."

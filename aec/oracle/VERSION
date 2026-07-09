@@ -1,0 +1,127 @@
+# AEC3 C++ oracle provenance
+
+This directory does not vendor any C++ source. It fetches and builds
+a pinned upstream release into a per-user cache directory (see
+`paths.sh` for the exact layout and `fetch.sh` to build it). This is a
+deliberate deviation from this repo's usual vendor-small-C convention
+(libopus, libFLAC, libebur128, libminimp3 are all a few thousand lines
+of plain C checked into their package trees) because the source here
+is far larger and pulls in its own dependency:
+
+- freedesktop `webrtc-audio-processing` v2.1 alone is ~90 non-test
+  source files under `webrtc/modules/audio_processing/aec3/` plus
+  supporting APM plumbing — roughly 20-25 kLOC of C++17.
+- It depends on abseil-cpp (a handful of its component libraries:
+  base, container, debugging, strings, crc, numeric, profiling, hash,
+  synchronization, time, types, log, random, status), itself a large
+  independent project.
+
+Committing ~25 kLOC of C++ plus a slice of abseil would dwarf every
+other vendored dependency in this repo combined. Instead this follows
+the pattern already used by the opus black-box parity suite
+(`libraries/opus/internal/parity_tests/blackbox/run.sh`) and the EBU
+loudness test-set fixtures (`loudness/ebu_testset_test.go`): fetch a
+pinned, checksum-verified release into a local cache on demand, build
+it there, and let parity/smoke tests skip cleanly when it isn't
+present rather than depending on it being checked into the tree or
+available in default CI.
+
+## Pins
+
+### webrtc-audio-processing v2.1
+
+- Source: `http://freedesktop.org/software/pulseaudio/webrtc-audio-processing/webrtc-audio-processing-2.1.tar.xz`
+- SHA-256: `ae9302824b2038d394f10213cab05312c564a038434269f11dbf68f511f9f9fe`
+  (independently verified by downloading and hashing the tarball
+  during development, 2026-07-08 — not taken on trust from a search
+  result).
+- Upstream project: https://gitlab.freedesktop.org/pulseaudio/webrtc-audio-processing
+- Version 2.1 tracks WebRTC M131 (per the upstream release
+  announcement). It bumped the abseil-cpp dependency to 20240722 and
+  is the same lineage the AEC canceller plan
+  (`~/.claude/plans/aec-canceller.md`) scoped the port against.
+- License: BSD-3-Clause, plus the WebRTC project's PATENTS grant file
+  (`webrtc/PATENTS` in the extracted tree). See the root
+  `LICENSING.md` for how this is surfaced to consumers of this repo.
+
+### abseil-cpp 20240722.0 (wrapdb revision 20240722.0-3)
+
+- Pinned by webrtc-audio-processing's own
+  `subprojects/abseil-cpp.wrap` (a meson "wrap-file" pointing at the
+  official abseil release plus a small wrapdb compatibility patch) —
+  not chosen independently by this repo.
+- Source: `https://github.com/abseil/abseil-cpp/releases/download/20240722.0/abseil-cpp-20240722.0.tar.gz`
+- Patch: `https://wrapdb.mesonbuild.com/v2/abseil-cpp_20240722.0-3/get_patch`
+- `fetch.sh` forces this exact subproject build via
+  `meson setup --force-fallback-for=abseil-cpp`, bypassing whatever
+  abseil (if any) is already installed system-wide via pkg-config —
+  verified necessary during development: the build host had abseil
+  20260107 (six years newer) discoverable via pkg-config, which would
+  otherwise silently replace the pin.
+- License: Apache-2.0.
+
+## Build configuration
+
+`fetch.sh` runs:
+
+```sh
+meson setup build \
+  --default-library=static \
+  --buildtype=release \
+  -Dneon=disabled \
+  --force-fallback-for=abseil-cpp
+ninja -C build
+```
+
+- `--default-library=static`: the cgo shim links a static archive, not
+  a dylib/so — no runtime library path or install step needed.
+- `-Dneon=disabled`: matches the opus black-box oracle's
+  `--disable-intrinsics` choice. Targets scalar-equivalent codegen so
+  a future bit-exact Go-port parity oracle (Phase B+) compares
+  apples-to-apples against a non-SIMD C reference. Does not affect
+  this Phase A smoke slice's own determinism claim (single-build
+  determinism holds regardless of vectorization — AEC3 has no
+  internal threads and its only randomness, the comfort-noise
+  generator, is a fixed-seed LCG).
+- Everything else (host OS detection, POSIX/Mac/Linux defines,
+  x86 AVX2 handling, etc.) is upstream's own meson.build logic —
+  untouched.
+
+## What gets built
+
+A single self-contained static archive,
+`webrtc/modules/audio_processing/libwebrtc-audio-processing-2.a`,
+which already bundles (via meson's internal `link_with` graph
+flattened by `ar`) every object from `rtc_base`, `common_audio`,
+`api`, `system_wrappers`, and the third-party FFT/pffft/rnnoise
+helpers used by the audio-processing sources — confirmed by inspecting
+the `ar csr` command ninja emits for that target. The cgo shim links
+against this one archive plus the 14 individual abseil-cpp component
+archives under `subprojects/abseil-cpp-20240722.0/*.a`, discovered at
+link time by `find` rather than hand-enumerated (see
+`internal/parity_tests/run.sh`), plus `-framework CoreFoundation
+-lc++` on macOS.
+
+Only a curated *public* header subset gets installed by `ninja
+install` (`api/audio/echo_canceller3_config.h`,
+`api/audio/audio_processing.h`, etc.) — the internal implementation
+headers the shim needs (`modules/audio_processing/aec3/echo_canceller3.h`,
+`modules/audio_processing/audio_buffer.h`) are **not** part of that
+set. `fetch.sh` therefore does not install anything; the shim's
+`#cgo CXXFLAGS` include paths point directly at the source tree
+(`$SRC/webrtc`, `$SRC/subprojects/abseil-cpp-20240722.0`), the same
+paths the upstream build itself compiles against.
+
+## Cache layout (see `paths.sh`)
+
+```
+${AEC_ORACLE_DIR:-${XDG_CACHE_HOME:-~/Library/Caches}/go-mediatoolkit-oracle/webrtc-apm-v2.1}/
+├── webrtc-audio-processing-2.1.tar.xz   (downloaded archive, kept for re-verify)
+└── src/webrtc-audio-processing-2.1/     (extracted source)
+    ├── webrtc/                          (AEC3 + APM sources)
+    ├── subprojects/abseil-cpp-20240722.0/
+    └── build/                           (meson/ninja build dir; the .a archives live here)
+```
+
+Re-running `fetch.sh` is idempotent: each step is skipped once its
+output already exists and passes verification.

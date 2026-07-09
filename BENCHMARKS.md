@@ -173,6 +173,51 @@ FLAC decode **1.60×** · FLAC encode **1.56–2.21×** · Opus SILK decode **1.
 
 ---
 
+# Acoustic echo cancellation (aec)
+
+This is a **separate report** from the audio codec tables above. `aec` has
+**no cgo runtime backend** — the C++ side (`webrtc-audio-processing` v2.1) is
+fetched only as an opt-in parity oracle, never a production path — so there is
+nothing to compare a port against. This is a standalone **throughput** report,
+following the same convention as the hardware-video section below.
+
+## Methodology
+
+`BenchmarkProcess_48kStereo` (`aec/canceller_bench_test.go`) drives one
+already-constructed `Canceller`'s `FeedFarEnd` + `Process` pair per iteration,
+one 10ms frame (480 samples/channel) of 48kHz stereo audio. `b.SetBytes` is
+the input PCM bytes per frame (float64 samples, both streams). Apple M3 Pro,
+`darwin/arm64`, default (non-`aec_strict`) build — median of repeated runs.
+
+## Results
+
+| Frame | ns/op | MB/s | Realtime factor | Allocs/op | Bytes/op |
+|---|--:|--:|--:|--:|--:|
+| 10ms @ 48kHz stereo | ~306 000 | ~25.1 | **~32.6×** | ~69 | ~36 800 |
+
+**~32.6× realtime** means a single goroutine can process about 32 concurrent
+48kHz-stereo streams' worth of echo cancellation before `Process` becomes the
+bottleneck — comfortably fast enough for any single-stream real-time call or
+conferencing use case, with headroom to spare. The remaining allocation count
+(~69 allocs, ~37 KB per 10ms frame) reflects the port's per-frame adaptive-
+filter bookkeeping and the render-side band-split (which must stay freshly
+allocated per call — it is queued for later draining, up to ~1s of frames
+deep — rather than reused; see `internal/aec3/audio_buffer.go`'s
+`reuseScratch` field doc comment). The capture-side band-split/merge and the
+per-sub-frame view wrappers were converted from a fresh `make()` every call to
+constructor-allocated reusable scratch (`AudioBuffer.splitScratch`/
+`mergeScratch`, `EchoCanceller3.renderSubFrameView`/`captureSubFrameView`),
+cutting allocs/op from ~99 to ~69 and bytes/op from ~45.9 KB to ~36.8 KB with
+no change to processed output (verified bit-exact against the full parity
+suite). It has not yet had a SIMD optimisation pass (see `aec/README.md`'s
+Known limitations).
+
+Reproduce:
+
+```sh
+go test -run '^$' -bench BenchmarkProcess_48kStereo -benchmem ./aec/...
+```
+
 # Hardware video (hwaccel)
 
 This is a **separate report** from the audio tables above. `go-mediatoolkit`
