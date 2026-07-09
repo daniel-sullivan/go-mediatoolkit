@@ -103,3 +103,56 @@ beyond the patent-expired AAC-LC target, confirm patent status for your use.
 
 *This is a summary, not legal advice — confirm with counsel before shipping an
 `aacfdk` binary, and read `libraries/aac/libfdk/COPYING` in full.*
+
+## AEC3 (`aec`): BSD-3-derived like FLAC/Opus, plus a fetched-not-vendored oracle
+
+The `aec` package is a 1:1 Go port of WebRTC's AEC3 echo canceller
+(freedesktop's `webrtc-audio-processing` v2.1, tracking WebRTC M131).
+AEC3 itself is **BSD-3-Clause**, the same permissive license as
+libFLAC and libopus, so — exactly like those two ports — the Go
+translation needs **no license fence**: it links into a plain
+`go build ./...` / `CGO_ENABLED=0` build with no opt-in build tag.
+WebRTC additionally ships a **PATENTS** grant (a license to Google's
+related patents, conditioned on not asserting patent claims against
+implementations of the covered specification) — the same shape as
+libfvad's grant already accepted for this toolkit's VAD package —
+which the pure-Go port inherits along with the BSD-3 copyright. The
+grant file itself is `webrtc/PATENTS` within the fetched-not-vendored
+oracle tree (see `aec/oracle/VERSION`'s "License" line for the
+oracle's own citation of this same path).
+
+| Component | License | Build tag |
+|---|---|---|
+| `aec/*.go` (public `Canceller` API) and `aec/internal/aec3/**` (the 1:1 AEC3 port) | BSD-3-Clause + WebRTC PATENTS grant (derivative of AEC3) | none — compiles in the default build |
+
+What *is* still opt-in is the **C++ parity oracle** used only to verify the port, not to run it:
+
+| Component | License | Build tag |
+|---|---|---|
+| webrtc-audio-processing v2.1 (fetched into a local cache by `aec/oracle/fetch.sh`; never checked into this repo) | BSD-3-Clause + WebRTC PATENTS grant | `aec_oracle` (only fetched/built/linked via the tasks in `aec/mise.toml`) |
+| abseil-cpp 20240722.0 (fetched transitively, pinned by webrtc-audio-processing's own meson wrap file) | Apache-2.0 | `aec_oracle` |
+| `aec/internal/parity_tests/*/shim.h` + `shim.cc` (extern "C" shims wrapping `webrtc::EchoCanceller3` and the ported AEC3 components) | MIT (this repo's own code); links against the BSD-3+PATENTS oracle above | `cgo && aec_oracle` |
+
+Unlike every other vendored C dependency in this repo (libopus,
+libFLAC, libebur128, libminimp3, LAME, FDK-AAC — all committed to the
+tree), the AEC3 oracle source is **fetched on demand into a per-user
+cache directory** (`${XDG_CACHE_HOME:-~/Library/Caches}/go-mediatoolkit-oracle/`)
+and built there, never vendored. At ~20-25 kLOC of C++ plus an abseil-cpp
+dependency, committing it would dwarf every other vendored engine in
+this repo combined — see `aec/oracle/VERSION` for the full rationale,
+provenance (exact tarball URL, sha256, abseil pin), and build recipe.
+
+**A default build links none of the oracle.** `go build ./...` and
+`go test ./...` never fetch anything over the network, never require
+a C++ toolchain, and never link the oracle's copy of BSD-3/PATENTS-
+covered code (the `aec` package's own AEC3-derived Go code links in
+every build regardless, the same as FLAC/Opus) — the oracle only
+exists (and only ever gets built) when a developer explicitly runs
+`mise run //aec:oracle:fetch` and builds/tests with `-tags=aec_oracle`.
+This is an opt-in developer-side parity check, not something an
+application built on top of go-mediatoolkit's `aec` package can
+accidentally pull in.
+
+*This is a summary, not legal advice — confirm with counsel before
+shipping an AEC3-derived binary or before enabling `aec_oracle` in any
+distributed build.*

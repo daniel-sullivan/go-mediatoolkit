@@ -13,7 +13,7 @@ experimental_monorepo_root = true
 go = "1.26"
 
 [monorepo]
-config_roots = ["libraries/opus", "resample", "libraries/flac", "libraries/mp3", "libraries/aac", "loudness", "vad"]
+config_roots = ["libraries/opus", "resample", "libraries/flac", "libraries/mp3", "libraries/aac", "loudness", "vad", "aec"]
 
 # ─── Aggregate tasks across all packages ─────────────────────────────
 

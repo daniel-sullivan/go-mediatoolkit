@@ -19,6 +19,7 @@ Pure-Go audio + video toolkit. Module path: `github.com/daniel-sullivan/go-media
 - `mixer/` — sums multiple `timeline.Source` streams onto an SPSC ring for a `devices.Stream` callback.
 - `loudness/` — EBU R128 / ITU-R BS.1770-4 loudness metering and normalisation (`Meter`, `Measure`, `Normalize`, `Normalizer`, `Limiter`, `Leveller`, `Monitor`); vendored libebur128 is a cgo parity oracle only, not a runtime backend.
 - `vad/` — streaming voice-activity detection (`Detector`, three engines: `EnergyDetector`, `WebRTCDetector`, `SileroDetector`) plus VAD-driven dynamics (`Gate`, `Ducker`); vendored libfvad is a bit-exact cgo parity oracle for the WebRTC engine, the vendored Silero ONNX model is an opt-in cgo parity oracle for the neural engine — neither is a runtime backend.
+- `aec/` — acoustic echo cancellation: a 1:1 pure-Go port of WebRTC's AEC3 (`Canceller`, a two-stream `FeedFarEnd`/`Process` API); the fetched (not vendored) C++ oracle is a parity check only, not a runtime backend.
 - `tools/` — example-only helpers that pull from multiple top-level packages (e.g. `audioio` bridges devices+timeline, `devicepicker` is a TUI). Not for production import.
 
 ## Style rules
@@ -167,3 +168,30 @@ across its two ported engines, and neither follows the FLAC/MP3/AAC/loudness
 
 See `vad/README.md`'s Verification section for the full tier breakdown and
 `LICENSING.md` for the libfvad/Silero fence map.
+The `aec` package (WebRTC AEC3 echo cancellation) is a 1:1 port like FLAC/Opus
+— BSD-3-Clause, no license fence, compiles in the default build — but its
+parity oracle (freedesktop's `webrtc-audio-processing` v2.1 + abseil-cpp) is
+**fetched on demand, never vendored** (unlike this repo's other cgo oracles,
+which are all committed to the tree): a per-user cache directory, built with
+meson+ninja, entirely opt-in. Fetch it once, then run the parity gate under
+the `aec_oracle` + `aec_strict` tags (the latter forces the same
+separate-rounding FP composites as the other `*_strict` conventions above, to
+match the oracle's `-ffp-contract=off`, `-Dneon=disabled` build):
+
+```
+MISE_EXPERIMENTAL=1 mise run //aec:oracle:fetch  # one-time, network + meson/ninja required
+MISE_EXPERIMENTAL=1 mise run //aec:parity        # 15 bit-exact slices, -tags='aec_oracle aec_strict'
+MISE_EXPERIMENTAL=1 mise run //aec:vet           # go vet, CGO_ENABLED=0
+```
+
+Without `aec_oracle` (or without cgo, or before the oracle has been fetched),
+each parity slice's cgo test files are excluded from the build at the
+build-constraint level (not a runtime `t.Skip`) — see
+`aec/internal/parity_tests/smoke/cgo.go`'s doc comment for why the split has
+to happen there instead of the runtime-skip pattern the other codecs use. A
+bare `go test ./aec/...` still runs the full non-parity unit suite (including
+`TestCanceller_EchoReduction`'s synthetic echo-reduction check) with no
+network access and no C++ toolchain required. See `aec/README.md`'s
+Verification section for the two documented FP trap classes (FMA contraction;
+SIMD/NEON auto-vectorization divergence) and `LICENSING.md` for the AEC3
+license/tag map.

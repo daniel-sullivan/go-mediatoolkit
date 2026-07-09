@@ -33,7 +33,7 @@ video:  Packet ──hwaccel.Decode──► Frame ──(transform)──► Fr
 | **Codec engines** | [`libraries/aac`](libraries/aac) · [`libraries/mp3`](libraries/mp3) · [`libraries/flac`](libraries/flac) · [`libraries/opus`](libraries/opus) · [`libraries/ogg`](libraries/ogg) (the 1:1 C ports + cgo backends + parity gates; not for external import) |
 | **Containers** | [`containers/wav`](containers/wav) · [`containers/ogg`](containers/ogg) · [`containers/flac`](containers/flac) · [`containers/mp3`](containers/mp3) · [`containers/mp4`](containers/mp4) · [`containers/adts`](containers/adts) |
 | **Video** | [`codec/hwaccel`](codec/hwaccel) (hardware encode/decode framework) · [`video`](video) (shared `Frame`/`Packet` types) |
-| **Sample pipeline** | [`resample`](resample) · [`mutations`](mutations) · [`loudness`](loudness) · [`vad`](vad) · [`generators`](generators) · [`timeline`](timeline) · [`mixer`](mixer) · [`buffers`](buffers) |
+| **Sample pipeline** | [`resample`](resample) · [`mutations`](mutations) · [`loudness`](loudness) · [`vad`](vad) · [`aec`](aec) · [`generators`](generators) · [`timeline`](timeline) · [`mixer`](mixer) · [`buffers`](buffers) |
 | **Runtime / IO** | [`devices`](devices) · [`events`](events) · [`consts`](consts) · [`inspection`](inspection) · [`tools`](tools) |
 
 The only required runtime dependency is `github.com/stretchr/testify` (tests). The
@@ -135,6 +135,7 @@ the [hardware-video section of BENCHMARKS.md](BENCHMARKS.md#hardware-video-hwacc
 - **[timeline](timeline)** — Cue/Source playback engine: clips, fades, transforms, and nested timelines.
 - **[mixer](mixer)** — sums multiple `timeline.Source` streams onto an SPSC ring for a device callback.
 - **[buffers](buffers)** — lock-free SPSC ring of `float64` samples for bridging audio callbacks across goroutines.
+- **[aec](aec)** — acoustic echo cancellation: a 1:1 pure-Go port of WebRTC's AEC3, removing a known far-end (loudspeaker) signal from a near-end (microphone) capture; bit-exact parity against a fetched (not vendored) C++ oracle.
 - **[devices](devices)** — OS audio device enumeration, hotplug, and capture/render streams (CoreAudio, WASAPI, PulseAudio).
 - **[events](events)** — typed pub-sub bus (generic `Bus[T]`, synchronous delivery).
 - **[consts](consts)** — shared numeric constants (sample rates, channel counts, equal-temperament note frequencies).
@@ -264,7 +265,7 @@ The other `devices/` examples (`echo`, `play`, `record`, `watch`) and the
 - **[BENCHMARKS.md](BENCHMARKS.md)** — native (pure-Go) vs C (cgo) throughput per codec, and the measured hardware-video numbers. Headlines: every native decoder runs **600–1400× realtime**; Opus CELT encode is within **12%** of libopus; AAC **encode is faster** than the C reference (0.75×); Arc A380 VAAPI sustains ~470 fps H.264→H.265 transcode at 480p.
 - **[LICENSING.md](LICENSING.md)** — the file-by-file license-fence map (`mp3lame`/LGPL, `aacfdk`/FDK) and what each build links.
 - **[CONTRIBUTING.md](CONTRIBUTING.md)** — contributor guide: package list, style rules, build-tag conventions, and the parity-gate commands.
-- **Per-package READMEs** — every package has its own README with the full API, options, and examples: each codec, each container, the hwaccel framework, and the rest of the toolkit including [timeline](./timeline/README.md), [mutations](./mutations/README.md), [loudness](./loudness/README.md), [vad](./vad/README.md), [generators](./generators/README.md), [consts](./consts/README.md), and [devices](./devices/README.md).
+- **Per-package READMEs** — every package has its own README with the full API, options, and examples: each codec, each container, the hwaccel framework, and the rest of the toolkit including [timeline](./timeline/README.md), [mutations](./mutations/README.md), [loudness](./loudness/README.md), [vad](./vad/README.md), [aec](./aec/README.md), [generators](./generators/README.md), [consts](./consts/README.md), and [devices](./devices/README.md).
 
 ## License
 
