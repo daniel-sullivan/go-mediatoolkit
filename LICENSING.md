@@ -16,6 +16,8 @@ vendored references:
 | `libraries/mp3/libminimp3/**` (minimp3) | CC0-1.0 (public domain) | Vendored MP3 **decoder** reference. |
 | `libraries/flac/libflac/**` (libFLAC) | BSD-3-Clause | Vendored FLAC reference. |
 | `loudness/libebur128/**` (libebur128) | MIT | Vendored EBU R128 loudness reference (cgo parity oracle only; not compiled into CGO_ENABLED=0 builds). |
+| `vad/libfvad/**` (libfvad) | BSD-3-Clause + WebRTC patent grant (see `vad/libfvad/PATENTS`) | Vendored WebRTC GMM VAD reference (cgo parity oracle only; not compiled into CGO_ENABLED=0 builds). |
+| `vad/internal/silero/silero_vad_16k_op15.safetensors` + `vad/internal/parity_tests/silero_ort/testdata/silero_vad_16k_op15.onnx` (Silero VAD v6.2.1 model) | MIT (see `vad/internal/silero/LICENSE`) | Vendored neural VAD model weights (embedded into default builds) and the onnx original (parity-oracle testdata only). Provenance in `vad/internal/silero/VERSION`. |
 
 ## The LGPL island: the MP3 encoder (opt-in only)
 

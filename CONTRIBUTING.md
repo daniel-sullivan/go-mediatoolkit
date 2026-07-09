@@ -18,6 +18,7 @@ Pure-Go audio + video toolkit. Module path: `github.com/daniel-sullivan/go-media
 - `timeline/` — Cue/Source playback engine; clips, fades, transforms, and nested timelines.
 - `mixer/` — sums multiple `timeline.Source` streams onto an SPSC ring for a `devices.Stream` callback.
 - `loudness/` — EBU R128 / ITU-R BS.1770-4 loudness metering and normalisation (`Meter`, `Measure`, `Normalize`, `Normalizer`, `Limiter`, `Leveller`, `Monitor`); vendored libebur128 is a cgo parity oracle only, not a runtime backend.
+- `vad/` — streaming voice-activity detection (`Detector`, three engines: `EnergyDetector`, `WebRTCDetector`, `SileroDetector`) plus VAD-driven dynamics (`Gate`, `Ducker`); vendored libfvad is a bit-exact cgo parity oracle for the WebRTC engine, the vendored Silero ONNX model is an opt-in cgo parity oracle for the neural engine — neither is a runtime backend.
 - `tools/` — example-only helpers that pull from multiple top-level packages (e.g. `audioio` bridges devices+timeline, `devicepicker` is a TUI). Not for production import.
 
 ## Style rules
@@ -134,3 +135,35 @@ tightest parity bound — the EBU Tech 3341/3342 compliance vectors and all
 other unit tests need no cgo oracle and no tag. See `loudness/README.md`'s
 Verification section for the tier breakdown and `LICENSING.md` for the
 libebur128 fence map.
+
+The `vad` package (voice-activity detection) splits its parity discipline
+across its two ported engines, and neither follows the FLAC/MP3/AAC/loudness
+`*_strict` pattern:
+
+- **WebRTC engine** (vendored libfvad, BSD-3 + the WebRTC patent grant): unlike
+  every other cgo oracle in this repo, libfvad is **pure integer** arithmetic —
+  there is no FMA/ULP concern to gate behind a strict tag or a
+  `-ffp-contract=off` cgo env. The parity suite is a plain `go test` and runs
+  in **default cgo CI**:
+
+  ```
+  mise run //vad:parity   # bit-exact, plain cgo, no tags/env
+  mise run //vad:test     # full vad package suite
+  ```
+
+- **Silero engine** (vendored ONNX model + MIT weights, hand-ported fixed
+  graph): the onnxruntime oracle is **opt-in**, gated on an external shared
+  library rather than a build tag:
+
+  ```
+  MISE_EXPERIMENTAL=1 mise run //vad:parity:silero   # needs ONNXRUNTIME_SHARED_LIB; skips without it
+  ```
+
+  Default CI instead runs a **golden gate** (`vad/testdata/silero_golden.json`,
+  asserted by `silero_golden_test.go`) that pins the oracle's per-window
+  probabilities without needing onnxruntime at all; the `silero-parity.yml`
+  workflow keeps the goldens honest by regenerating them from a fresh oracle
+  run and failing the build on drift.
+
+See `vad/README.md`'s Verification section for the full tier breakdown and
+`LICENSING.md` for the libfvad/Silero fence map.

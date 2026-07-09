@@ -1,0 +1,70 @@
+name: Silero parity
+
+# The default-CI Silero gate (vad/silero_golden_test.go) pins the
+# pure-Go port against committed oracle probabilities without needing
+# onnxruntime. THIS workflow is what keeps those goldens honest: it
+# downloads the pinned onnxruntime release, runs the full opt-in
+# oracle slice (per-window |Δp| ≤ 1e-4 against the vendored onnx
+# model), and re-runs the oracle over the shared signal set to verify
+# the committed vad/testdata/silero_golden.json still matches within
+# the same tolerance (gen -verify). A byte-level `git diff` gate would
+# flake instead: fp32 oracle outputs differ at the ~1e-6 level across
+# CPU ISAs (NEON vs AVX vs AVX-512), so a golden file generated on one
+# machine never byte-matches another machine's regeneration.
+
+on:
+  push:
+  pull_request:
+
+env:
+  # Pinned oracle runtime — keep in sync with vad/internal/silero/VERSION
+  # and the version recorded inside vad/testdata/silero_golden.json.
+  ORT_VERSION: "1.27.0"
+
+jobs:
+  silero-parity:
+    name: Silero ORT parity + golden regen
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+          check-latest: true
+
+      - name: Cache onnxruntime ${{ env.ORT_VERSION }}
+        id: ort-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/onnxruntime
+          key: onnxruntime-linux-x64-${{ env.ORT_VERSION }}
+
+      - name: Download onnxruntime ${{ env.ORT_VERSION }}
+        if: steps.ort-cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/onnxruntime
+          curl -sSL -o /tmp/ort.tgz \
+            "https://github.com/microsoft/onnxruntime/releases/download/v${ORT_VERSION}/onnxruntime-linux-x64-${ORT_VERSION}.tgz"
+          tar xzf /tmp/ort.tgz -C ~/onnxruntime --strip-components=1
+
+      - name: Download modules
+        run: go mod download
+
+      - name: Run the Silero parity slice
+        working-directory: vad
+        run: |
+          export ONNXRUNTIME_SHARED_LIB="$HOME/onnxruntime/lib/libonnxruntime.so"
+          go test -count=1 -v ./internal/parity_tests/silero_ort
+
+      - name: Verify the committed goldens against a fresh oracle run
+        working-directory: vad
+        run: |
+          export ONNXRUNTIME_SHARED_LIB="$HOME/onnxruntime/lib/libonnxruntime.so"
+          go run ./internal/parity_tests/silero_ort/gen -verify
+
+      - name: Run the golden gate itself
+        working-directory: vad
+        run: go test -count=1 -run TestSileroGolden -v .

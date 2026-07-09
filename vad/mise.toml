@@ -1,0 +1,50 @@
+# VAD package — mise tasks
+#
+# The vendored libfvad C source (libfvad/, the WebRTC engine's parity
+# oracle) is compiled inline via cgo by each internal/parity_tests
+# slice as its own self-contained oracle (the loudness pattern); the
+# root package is cgo-free, delegating to the pure-Go internal/fvad
+# port. libfvad is pure integer arithmetic, so — unlike the
+# loudness/flac/mp3 oracles — the parity suite needs NO strict build
+# tag and NO CGO_CFLAGS: a plain `go test ./...` runs the same
+# bit-exact assertions. The Silero oracle tasks (`parity:silero`,
+# `golden:gen`) land with that engine's phase.
+#
+# Task names below are bare (e.g. `test`). Under monorepo mode
+# (`experimental_monorepo_root = true` in the root mise.toml +
+# MISE_EXPERIMENTAL=1), mise auto-prefixes these with the path to this
+# config so they appear as `//vad:test` etc.
+
+[tasks."test"]
+description = "Run all vad package tests"
+run = "go test -count=1 ./..."
+
+[tasks."test:race"]
+description = "Run all vad package tests with the race detector (exercises the live-setter atomics)"
+run = "go test -race -count=1 ./..."
+
+[tasks."parity"]
+description = "Run the WebRTC-VAD parity suite (pure-Go internal/fvad port vs vendored C libfvad via cgo; bit-exact, pure integer, no tags or env needed)"
+run = "go test -count=1 ./internal/parity_tests/fvad_sp ./internal/parity_tests/fvad_filterbank ./internal/parity_tests/fvad_gmm ./internal/parity_tests/fvad_core ./internal/parity_tests/fvad_e2e"
+
+[tasks."vet"]
+description = "Run go vet on the vad package (CGO_ENABLED=0, matches the default no-cgo build)"
+run = "CGO_ENABLED=0 go vet ./..."
+
+# The Silero oracle needs an onnxruntime shared library:
+#   ONNXRUNTIME_SHARED_LIB=/path/to/libonnxruntime.{dylib,so}
+# Pinned oracle: onnxruntime 1.27.0 (official release binaries —
+# onnxruntime-osx-arm64-1.27.0.tgz locally, onnxruntime-linux-x64 in
+# the silero-parity workflow). Without the variable, parity:silero
+# skips its ORT tests (the weight byte-check still runs) and
+# golden:gen refuses to run. Default CI needs neither: the committed
+# testdata/silero_golden.json pins the same numbers via
+# silero_golden_test.go.
+
+[tasks."parity:silero"]
+description = "Run the Silero parity slice (pure-Go internal/silero port vs the vendored onnx model via onnxruntime; |Δp| ≤ 1e-4 per window; needs ONNXRUNTIME_SHARED_LIB)"
+run = "go test -count=1 -v ./internal/parity_tests/silero_ort"
+
+[tasks."golden:gen"]
+description = "Regenerate testdata/silero_golden.json from the onnxruntime oracle (needs ONNXRUNTIME_SHARED_LIB)"
+run = "go run ./internal/parity_tests/silero_ort/gen"
