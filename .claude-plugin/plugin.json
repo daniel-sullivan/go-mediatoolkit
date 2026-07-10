@@ -1,0 +1,6 @@
+{
+  "name": "go-mediatoolkit-skills",
+  "description": "Official go-mediatoolkit skills for Claude and other AI agents — streaming audio codecs (AAC, MP3, FLAC, Opus, PCM), containers (WAV, Ogg, MP4, ADTS), resampling, loudness, VAD, echo cancellation, timeline/mixer playback, OS audio devices, and hardware-accelerated video",
+  "version": "1.0.0",
+  "skills": "./skills/"
+}

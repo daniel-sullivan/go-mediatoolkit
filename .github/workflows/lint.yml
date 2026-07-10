@@ -40,3 +40,6 @@ jobs:
       #                covered by the bit-exact parity gates instead.
       - name: go vet
         run: CGO_ENABLED=0 go vet -stdmethods=false -asmdecl=false ./...
+
+      - name: llms.txt drift
+        run: mise run llms:check

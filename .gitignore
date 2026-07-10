@@ -45,3 +45,6 @@
 
 # Agent tooling (not part of the published library)
 .claude/
+
+# llms.txt generator binary (go build ./tools/llmsgen)
+/tools/llmsgen/llmsgen

@@ -1,0 +1,19 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "go-mediatoolkit",
+  "description": "Official go-mediatoolkit skills for Claude and other AI agents — streaming audio codecs (AAC, MP3, FLAC, Opus, PCM), containers (WAV, Ogg, MP4, ADTS), resampling, loudness, VAD, echo cancellation, timeline/mixer playback, OS audio devices, and hardware-accelerated video",
+  "owner": {
+    "name": "Daniel Sullivan"
+  },
+  "plugins": [
+    {
+      "name": "go-mediatoolkit-skills",
+      "description": "Official go-mediatoolkit skills covering the float64 streaming codec model, container pairing, license-fence build tags, the sample pipeline (resample, mutations, loudness, vad, aec, generators, timeline, mixer), audio devices, and the hwaccel video framework",
+      "author": {
+        "name": "Daniel Sullivan"
+      },
+      "source": "./",
+      "category": "productivity"
+    }
+  ]
+}

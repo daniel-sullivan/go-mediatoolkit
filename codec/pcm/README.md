@@ -69,7 +69,7 @@ import "github.com/daniel-sullivan/go-mediatoolkit/containers/wav"
 
 rd, err := wav.NewReader(r)        // parses the fmt chunk → format/rate/channels
 hdr := rd.Header()
-dec, err := pcm.NewDecoder(rd.Data(), hdr.SampleRate, hdr.Channels, hdr.Extra.Format)
+dec, err := pcm.NewDecoder(rd.Data(), hdr.SampleRate, hdr.Channels, hdr.SampleFormat)
 ```
 
 `rd.Data()` is the raw PCM `io.Reader` sliced from the `data` chunk; the `fmt` chunk supplies the format/rate/channels the headerless codec needs. See [`containers/wav`](../../containers/wav) for the full RIFF story.

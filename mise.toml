@@ -51,3 +51,11 @@ run = "go vet ./..."
 [tasks."ci"]
 description = "Run full CI pipeline: generate, build, vet, test with race detector"
 depends = ["//:generate", "//:build", "//:vet", "//:test:race"]
+
+[tasks."llms"]
+description = "Regenerate llms.txt and llms-full.txt"
+run = "go run ./tools/llmsgen"
+
+[tasks."llms:check"]
+description = "Fail if llms.txt/llms-full.txt are stale"
+run = "go run ./tools/llmsgen -check"

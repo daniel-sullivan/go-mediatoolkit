@@ -14,13 +14,13 @@ Pure-Go audio + video toolkit. Module path: `github.com/daniel-sullivan/go-media
 - `events/` — typed pub-sub bus (generic `Bus[T]`, sync delivery).
 - `devices/` — OS audio device enumeration, hotplug, and capture/render streams (CoreAudio, WASAPI, PulseAudio).
 - `buffers/` — lock-free SPSC ring of `float64` samples for bridging audio callbacks across goroutines.
-- `consts/` — shared numeric constants (sample rates, channel counts, equal-temperament note frequencies).
+- `consts/` — shared numeric constants (sample rates, equal-temperament note frequencies).
 - `timeline/` — Cue/Source playback engine; clips, fades, transforms, and nested timelines.
 - `mixer/` — sums multiple `timeline.Source` streams onto an SPSC ring for a `devices.Stream` callback.
 - `loudness/` — EBU R128 / ITU-R BS.1770-4 loudness metering and normalisation (`Meter`, `Measure`, `Normalize`, `Normalizer`, `Limiter`, `Leveller`, `Monitor`); vendored libebur128 is a cgo parity oracle only, not a runtime backend.
 - `vad/` — streaming voice-activity detection (`Detector`, three engines: `EnergyDetector`, `WebRTCDetector`, `SileroDetector`) plus VAD-driven dynamics (`Gate`, `Ducker`); vendored libfvad is a bit-exact cgo parity oracle for the WebRTC engine, the vendored Silero ONNX model is an opt-in cgo parity oracle for the neural engine — neither is a runtime backend.
 - `aec/` — acoustic echo cancellation: a 1:1 pure-Go port of WebRTC's AEC3 (`Canceller`, a two-stream `FeedFarEnd`/`Process` API); the fetched (not vendored) C++ oracle is a parity check only, not a runtime backend.
-- `tools/` — example-only helpers that pull from multiple top-level packages (e.g. `audioio` bridges devices+timeline, `devicepicker` is a TUI). Not for production import.
+- `tools/` — example-only helpers that pull from multiple top-level packages (e.g. `audioio` bridges devices+timeline, `devicepicker` is a TUI) plus repo tooling (`llmsgen` regenerates `llms.txt`/`llms-full.txt`). Not for production import.
 
 ## Style rules
 
@@ -44,7 +44,8 @@ Imperative, specific, no scoped prefix. Describe what *and* why. Examples from t
 
 GitHub Actions (`.github/workflows/`): `ci.yml` runs `-race` unit + integration
 tests across ubuntu/macos/windows; `tests.yml` builds pure-Go (`CGO_ENABLED=0`)
-and runs `go test ./...`; `lint.yml` enforces `gofmt`/`go vet`; and one
+and runs `go test ./...`; `lint.yml` enforces `gofmt`/`go vet` and that the
+generated `llms.txt`/`llms-full.txt` are current (`mise run llms:check`); and one
 `blackbox-<codec>.yml` per codec (opus/flac/mp3/aac, via the reusable
 `blackbox-reusable.yml`) builds a version-matched upstream reference CLI and runs
 that codec's `parity:blackbox` mise task — each surfaces its own README badge.

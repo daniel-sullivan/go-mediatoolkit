@@ -138,7 +138,7 @@ the [hardware-video section of BENCHMARKS.md](BENCHMARKS.md#hardware-video-hwacc
 - **[aec](aec)** — acoustic echo cancellation: a 1:1 pure-Go port of WebRTC's AEC3, removing a known far-end (loudspeaker) signal from a near-end (microphone) capture; bit-exact parity against a fetched (not vendored) C++ oracle.
 - **[devices](devices)** — OS audio device enumeration, hotplug, and capture/render streams (CoreAudio, WASAPI, PulseAudio).
 - **[events](events)** — typed pub-sub bus (generic `Bus[T]`, synchronous delivery).
-- **[consts](consts)** — shared numeric constants (sample rates, channel counts, equal-temperament note frequencies).
+- **[consts](consts)** — shared numeric constants (sample rates, equal-temperament note frequencies).
 - **[inspection](inspection)** — ad-hoc analysis utilities.
 - **[tools](tools)** — example-only cross-package helpers (e.g. `audioio` bridging devices+timeline, `devicepicker` TUI). Not for production import.
 - **[vad](vad)** — streaming voice-activity detection (Energy / WebRTC / Silero engines) plus VAD-driven dynamics: a speech `Gate` and a sidechain `Ducker`.
@@ -266,6 +266,21 @@ The other `devices/` examples (`echo`, `play`, `record`, `watch`) and the
 - **[LICENSING.md](LICENSING.md)** — the file-by-file license-fence map (`mp3lame`/LGPL, `aacfdk`/FDK) and what each build links.
 - **[CONTRIBUTING.md](CONTRIBUTING.md)** — contributor guide: package list, style rules, build-tag conventions, and the parity-gate commands.
 - **Per-package READMEs** — every package has its own README with the full API, options, and examples: each codec, each container, the hwaccel framework, and the rest of the toolkit including [timeline](./timeline/README.md), [mutations](./mutations/README.md), [loudness](./loudness/README.md), [vad](./vad/README.md), [aec](./aec/README.md), [generators](./generators/README.md), [consts](./consts/README.md), and [devices](./devices/README.md).
+
+## Docs for AI agents
+
+[`llms.txt`](llms.txt) is an index of this repo's documentation for LLMs and
+agents, following the [llmstxt.org](https://llmstxt.org) convention.
+[`llms-full.txt`](llms-full.txt) at the same location is the full variant: it
+inlines every README plus a generated Go API reference (`go doc -all` for
+every public, non-internal package). Both are generated from the repo tree —
+regenerate with `mise run llms` after doc changes. An installable Claude Code
+agent skill for this repo is also available:
+
+```sh
+/plugin marketplace add daniel-sullivan/go-mediatoolkit
+/plugin install go-mediatoolkit-skills@go-mediatoolkit
+```
 
 ## License
 
