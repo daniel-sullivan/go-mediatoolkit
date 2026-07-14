@@ -1,0 +1,14 @@
+# Generated RNNoise model weights — NOT vendored in git.
+#
+# rnnoise_data.c is 28 MB of generated float-array C source. It is needed
+# only to build the cgo parity oracle (denoise/internal/parity_tests/
+# {network,e2e}) and to regenerate the embedded weight blob. Fetch it with:
+#
+#     mise run //libraries/rnnoise:fetch
+#
+# The shipping pure-Go port embeds denoise/internal/rnnoise/rnnoise_weights.bin
+# (a 4.2 MB float blob) and needs none of these files.
+rnnoise_data.c
+rnnoise_data.h
+rnnoise_data_little.c
+rnnoise_data_little.h

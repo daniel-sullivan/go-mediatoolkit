@@ -18,6 +18,9 @@ vendored references:
 | `loudness/libebur128/**` (libebur128) | MIT | Vendored EBU R128 loudness reference (cgo parity oracle only; not compiled into CGO_ENABLED=0 builds). |
 | `vad/libfvad/**` (libfvad) | BSD-3-Clause + WebRTC patent grant (see `vad/libfvad/PATENTS`) | Vendored WebRTC GMM VAD reference (cgo parity oracle only; not compiled into CGO_ENABLED=0 builds). |
 | `vad/internal/silero/silero_vad_16k_op15.safetensors` + `vad/internal/parity_tests/silero_ort/testdata/silero_vad_16k_op15.onnx` (Silero VAD v6.2.1 model) | MIT (see `vad/internal/silero/LICENSE`) | Vendored neural VAD model weights (embedded into default builds) and the onnx original (parity-oracle testdata only). Provenance in `vad/internal/silero/VERSION`. |
+| `denoise/internal/gtcrn/gtcrn_weights.safetensors` + `denoise/internal/parity_tests/gtcrn_ort/testdata/gtcrn.onnx` (GTCRN DNS3 model) | MIT (see `denoise/internal/gtcrn/LICENSE`) | Vendored neural speech-denoise model weights (embedded into default builds — the ONNX graph's own float32 initializers) and the onnx original (parity-oracle testdata only). MIT code AND MIT DNS3-trained weights. Provenance in `denoise/internal/gtcrn/VERSION`. |
+| `denoise/*.go` (public `RNNoise` engine) + `denoise/internal/rnnoise/**` (the 1:1 RNNoise v0.2 port) | BSD-3-Clause (derivative of RNNoise) | none — compiles in the default build |
+| `libraries/rnnoise/librnnoise/**` (RNNoise v0.2 C source + model weights) | BSD-3-Clause (see `librnnoise/COPYING`) | Vendored RNNoise reference + float weights (cgo parity oracle only; not compiled into CGO_ENABLED=0 builds). Provenance in `librnnoise/VERSION`. |
 
 ## The LGPL island: the MP3 encoder (opt-in only)
 

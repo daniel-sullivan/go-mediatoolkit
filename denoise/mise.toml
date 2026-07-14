@@ -1,0 +1,31 @@
+# denoise package — mise tasks
+#
+# The GTCRN engine is a pure-Go hand-port of the vendored gtcrn.onnx
+# streaming graph (internal/gtcrn), parity-gated against onnxruntime.
+# The root package is cgo-free; the onnxruntime oracle lives in
+# internal/parity_tests/gtcrn_ort and is compiled + run only under cgo
+# with ONNXRUNTIME_SHARED_LIB set (the Silero precedent).
+#
+# Task names below are bare; under monorepo mode (experimental_monorepo_root
+# in the root mise.toml + MISE_EXPERIMENTAL=1) they appear as //denoise:test.
+
+[tasks."test"]
+description = "Run the denoise package tests (cgo-free: STFT + front-stage forward goldens + engine contract)"
+run = "CGO_ENABLED=0 go test -count=1 ./..."
+
+[tasks."vet"]
+description = "Run go vet on the denoise package (CGO_ENABLED=0, matches the default no-cgo build)"
+run = "CGO_ENABLED=0 go vet ./..."
+
+# The GTCRN onnxruntime oracle needs a shared library:
+#   ONNXRUNTIME_SHARED_LIB=/path/to/libonnxruntime.{dylib,so}
+# Pinned oracle: onnxruntime 1.27.0 (official release binaries —
+# onnxruntime-osx-arm64-1.27.0.tgz locally, onnxruntime-linux-x64 in CI),
+# driven single-threaded with graph optimizations disabled (ORT_DISABLE_ALL).
+# Without the variable, parity:gtcrn skips its ORT tests (the weight
+# byte-check still runs). Default CI needs neither: the committed
+# testdata goldens pin the same numbers.
+
+[tasks."parity:gtcrn"]
+description = "Run the GTCRN parity slice (pure-Go internal/gtcrn port + oracle harness vs the vendored onnx model via onnxruntime; mixed tolerance max(|Δ|≤1e-4, rel≤1e-3); needs ONNXRUNTIME_SHARED_LIB)"
+run = "CGO_ENABLED=1 go test -count=1 -v ./internal/parity_tests/gtcrn_ort"
