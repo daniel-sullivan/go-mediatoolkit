@@ -1,0 +1,68 @@
+# go-mediatoolkit
+
+> A pure-Go audio and video toolkit: streaming codecs, containers, a sample pipeline (resample / mutate / mix / time-line), OS audio devices, and a hardware-accelerated video offload framework — module github.com/daniel-sullivan/go-mediatoolkit, Go 1.26.
+
+This is go-mediatoolkit (module `github.com/daniel-sullivan/go-mediatoolkit`), a pure-Go audio and
+video toolkit. Every compressed audio codec (AAC, MP3, FLAC, Opus) is a
+bit-exact or byte-identical 1:1 port of its canonical C reference, and the
+default build is `CGO_ENABLED=0` pure Go, with the C references available as
+opt-in cgo backends. This file follows the llms.txt convention
+(https://llmstxt.org). The companion file `llms-full.txt`, alongside this one
+at the repository root, inlines every documentation file plus a generated Go
+API reference (`go doc -all` for every public package). Installable agent
+skills for this toolkit are also available via the Claude Code plugin
+marketplace hosted in this repository:
+`/plugin marketplace add daniel-sullivan/go-mediatoolkit`.
+
+## Overview
+
+- [README.md](https://raw.githubusercontent.com/daniel-sullivan/go-mediatoolkit/main/README.md): A pure-Go audio and video toolkit: streaming codecs, containers, a sample pipeline (resample / mutate / mix / time-line), OS audio devices, and a hardware-accelerated video offload framework — module github.com/daniel-sullivan/go-mediatoolkit, Go…
+- [Audio codec benchmarks — pure-Go (native) vs C (cgo)](https://raw.githubusercontent.com/daniel-sullivan/go-mediatoolkit/main/BENCHMARKS.md): This document compares each audio codec's pure-Go 1:1 port (the NewNative… path) against its vendored C reference (the cgo backend), for decode and — where an encoder exists — encode, on this host.
+- [Licensing](https://raw.githubusercontent.com/daniel-sullivan/go-mediatoolkit/main/LICENSING.md): go-mediatoolkit is MIT-licensed (see LICENSE). A few vendored third-party engines and the Go code derived from them carry their own licenses. This file maps them so you know exactly what a given build links.
+- [Contributing to go-mediatoolkit](https://raw.githubusercontent.com/daniel-sullivan/go-mediatoolkit/main/CONTRIBUTING.md): Pure-Go audio + video toolkit. Module path: github.com/daniel-sullivan/go-mediatoolkit. Go 1.26. Only runtime dep: github.com/stretchr/testify.
+
+## Audio codecs
+
+- [codec/aac](https://raw.githubusercontent.com/daniel-sullivan/go-mediatoolkit/main/codec/aac/README.md): Streaming AAC codec: AAC access units (packets) ↔ interleaved float64 samples in [-1.0, 1.0]. This is the codec.Decoder / codec.Encoder face of AAC, for pipelines that speak mutations.Audio (the same convention as codec/flac, codec/opus, codec/pcm).
+- [codec/flac](https://raw.githubusercontent.com/daniel-sullivan/go-mediatoolkit/main/codec/flac/README.md): Streaming FLAC codec: a native FLAC byte stream ↔ interleaved float64 samples in [-1.0, 1.0]. This is the codec.Decoder / codec.Encoder face of FLAC, for pipelines that speak mutations.Audio (the same convention as codec/mp3, codec/opus, codec/pcm).
+- [codec/mp3](https://raw.githubusercontent.com/daniel-sullivan/go-mediatoolkit/main/codec/mp3/README.md): Streaming MP3 codec: a native MP3 byte stream ↔ interleaved float64 samples in [-1.0, 1.0]. This is the codec.Decoder / codec.Encoder face of MP3, for pipelines that speak mutations.Audio (the same convention as codec/flac, codec/opus, codec/pcm).
+- [codec/opus](https://raw.githubusercontent.com/daniel-sullivan/go-mediatoolkit/main/codec/opus/README.md): Streaming Opus codec: Opus packets ↔ interleaved float64 samples in [-1.0, 1.0]. This is the codec.Decoder / codec.Encoder face of Opus, for pipelines that speak mutations.Audio (the same convention as codec/flac, codec/mp3, codec/pcm).
+- [codec/pcm](https://raw.githubusercontent.com/daniel-sullivan/go-mediatoolkit/main/codec/pcm/README.md): Streaming PCM codec: raw headerless PCM bytes ↔ interleaved float64 samples in [-1.0, 1.0]. This is the codec.Decoder / codec.Encoder face of linear PCM, for pipelines that speak mutations.Audio (the same convention as codec/flac, codec/opus,…
+
+## Containers
+
+- [containers/adts](https://raw.githubusercontent.com/daniel-sullivan/go-mediatoolkit/main/containers/adts/README.md): Pure-Go reader/writer for ADTS (Audio Data Transport Stream) — the per-frame framing used by standalone .aac files and broadcast AAC. This is one of the two container faces of AAC (the other being containers/mp4 for .m4a/.mp4): it adds a 7-byte…
+- [containers/flac](https://raw.githubusercontent.com/daniel-sullivan/go-mediatoolkit/main/containers/flac/README.md): Pure-Go reader/writer for the native FLAC stream container — the fLaC magic + metadata-block chain that frames FLAC audio frames. This is the container face of FLAC, mirroring containers/wav, containers/ogg, containers/mp4, and containers/mp3: it…
+- [containers/mp3](https://raw.githubusercontent.com/daniel-sullivan/go-mediatoolkit/main/containers/mp3/README.md): ID3 metadata around a native MP3 stream: ID3v2 (and ID3v1) tag parse/projection on top of the raw, self-framed MP3 byte stream. This is the container face of MP3, mirroring containers/flac and containers/wav.
+- [containers/mp4](https://raw.githubusercontent.com/daniel-sullivan/go-mediatoolkit/main/containers/mp4/README.md): Pure-Go reader/writer for the ISO Base Media File Format (ISOBMFF / MP4) — the framing used by .m4a and .mp4 audio files. This is the container face of AAC, mirroring containers/flac, containers/ogg, and containers/wav: it parses the box tree,…
+- [containers/ogg](https://raw.githubusercontent.com/daniel-sullivan/go-mediatoolkit/main/containers/ogg/README.md): Pure-Go reader/writer for the Ogg container — the page/packet framing that carries Opus, Vorbis, and FLAC bitstreams (.opus, .ogg). This is the container face of the packet codecs, mirroring containers/mp4 (the other packet-oriented container) and…
+- [containers/wav](https://raw.githubusercontent.com/daniel-sullivan/go-mediatoolkit/main/containers/wav/README.md): Pure-Go reader/writer for RIFF/WAVE (.wav) — the chunked container that frames raw PCM and carries metadata. This is the container face of PCM, mirroring containers/flac, containers/ogg, containers/mp4, and containers/mp3: it parses the RIFF chunk…
+
+## Sample pipeline
+
+- [aec](https://raw.githubusercontent.com/daniel-sullivan/go-mediatoolkit/main/aec/README.md): Pure Go implementation of acoustic echo cancellation (AEC): a 1:1 port of WebRTC's AEC3 (freedesktop's webrtc-audio-processing v2.1, tracking WebRTC M131), with an optional Cgo parity oracle (the fetched, not vendored, C++ reference) used only to…
+- [generators](https://raw.githubusercontent.com/daniel-sullivan/go-mediatoolkit/main/generators/README.md): Audio signal generators for testing, examples, and synthesis: sines, chords, noise, pitched notes, melodies, sweeps, and short SFX bursts. Every generator returns a mutations.Audio — interleaved float64 samples in [-1, 1] paired with its sample rate…
+- [loudness](https://raw.githubusercontent.com/daniel-sullivan/go-mediatoolkit/main/loudness/README.md): Pure Go implementation of EBU R128 / ITU-R BS.1770-4 loudness metering and normalisation, with an optional Cgo parity oracle (the vendored reference C libebur128) used only to verify the port — there is no Cgo runtime backend to opt into.
+- [mutations](https://raw.githubusercontent.com/daniel-sullivan/go-mediatoolkit/main/mutations/README.md): Sample-buffer transforms over interleaved float64 PCM in [-1, 1]: the Audio value type, sample-format conversion, channel mixing, interleave/deinterleave, trimming, chunking, looping, gain/fade envelopes, saturation, and a small family of stateful…
+- [resample](https://raw.githubusercontent.com/daniel-sullivan/go-mediatoolkit/main/resample/README.md): A pure-Go sample rate converter, ported from libsamplerate. Supports five conversion algorithms at different quality/speed tradeoffs, streaming and one-shot conversion, and automatic parallel processing for the sinc converters.
+- [timeline](https://raw.githubusercontent.com/daniel-sullivan/go-mediatoolkit/main/timeline/README.md): The playback-layer foundation: schedule audio along a monotonically advancing frame cursor and read back a single interleaved float64 stream that a mixer or a devices callback consumes.
+- [vad](https://raw.githubusercontent.com/daniel-sullivan/go-mediatoolkit/main/vad/README.md): Streaming voice-activity detection (VAD) for interleaved float64 audio, plus two VAD-driven dynamics processors: a speech Gate and a sidechain Ducker.
+
+## Video
+
+- [video](https://raw.githubusercontent.com/daniel-sullivan/go-mediatoolkit/main/video/README.md): The minimal shared types exchanged across the hardware-codec seam in codec/hwaccel. It carries no codec logic — only the two data carriers that flow through every backend (VideoToolbox, VAAPI, V4L2, NVENC/NVDEC) and the enums that tag them.
+- [codec/hwaccel](https://raw.githubusercontent.com/daniel-sullivan/go-mediatoolkit/main/codec/hwaccel/README.md): A backend-pluggable framework for hardware-accelerated video encode and decode — the ffmpeg model in pure Go. Take raw frames (or an incoming stream) and re-encode on whatever fixed-function silicon the host exposes, preferring hardware and falling…
+- [Hardware codec offload (codec/hwaccel)](https://raw.githubusercontent.com/daniel-sullivan/go-mediatoolkit/main/codec/hwaccel/DESIGN.md): A backend-pluggable framework for hardware-accelerated video encode/decode of H.264 and H.265, plus the per-platform accelerator bindings. The goal is the NVR / transcode use case: take raw frames (or an incoming H.264 stream) and re-encode to HEVC…
+
+## Runtime and IO
+
+- [consts](https://raw.githubusercontent.com/daniel-sullivan/go-mediatoolkit/main/consts/README.md): Named numeric constants shared across the toolkit: sample rates and equal-temperament note frequencies. The goal is to keep call-site literals (48000, 440) out of user code so intent reads clearly from the identifier — consts.SampleRate48000 instead…
+- [devices](https://raw.githubusercontent.com/daniel-sullivan/go-mediatoolkit/main/devices/README.md): Cross-platform OS audio: enumerate the host's devices, get hotplug notifications when they change, and open capture (input) / render (output) streams that exchange interleaved float64 samples in [-1, 1] with a backend realtime callback.
+
+## Optional
+
+- [libraries/aac](https://raw.githubusercontent.com/daniel-sullivan/go-mediatoolkit/main/libraries/aac/README.md): Pure-Go 1:1 port of the Advanced Audio Coding (AAC) packet codec, derived from the vendored Fraunhofer FDK-AAC reference (mstorsjo fork, v2.0.3), with an optional Cgo path that links the same FDK-AAC C source directly.
+- [libraries/flac](https://raw.githubusercontent.com/daniel-sullivan/go-mediatoolkit/main/libraries/flac/README.md): Pure Go implementation of the FLAC lossless audio codec (RFC 9639), with an optional Cgo path wrapping the reference C libFLAC.
+- [libraries/mp3](https://raw.githubusercontent.com/daniel-sullivan/go-mediatoolkit/main/libraries/mp3/README.md): Go implementation of the MP3 (MPEG-1/2/2.5 Audio Layer III) lossy audio codec, with optional Cgo paths wrapping the reference C minimp3 decoder and LAME 3.100 encoder.
+- [libraries/ogg](https://raw.githubusercontent.com/daniel-sullivan/go-mediatoolkit/main/libraries/ogg/README.md): Pure Go implementation of the Ogg bitstream format (RFC 3533), with an optional Cgo path wrapping C libogg 1.3.6.
+- [libraries/opus](https://raw.githubusercontent.com/daniel-sullivan/go-mediatoolkit/main/libraries/opus/README.md): Pure Go implementation of the Opus audio codec (RFC 6716), with an optional Cgo path wrapping C libopus.
