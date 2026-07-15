@@ -1,0 +1,3072 @@
+{
+ "source": "/tmp/gtcrn_fetch/gtcrn.onnx",
+ "n_float32_initializers": 183,
+ "total_float32_params": 48225,
+ "weight_nodes": [
+  {
+   "order": 26,
+   "op": "MatMul",
+   "node": "MatMul_26",
+   "attrs": {},
+   "inputs": [
+    "onnx::MatMul_304",
+    "onnx::MatMul_3414"
+   ],
+   "outputs": [
+    "onnx::Concat_306"
+   ],
+   "weights": [
+    {
+     "name": "onnx::MatMul_3414",
+     "shape": [
+      192,
+      64
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 75,
+   "op": "Conv",
+   "node": "Conv_75",
+   "attrs": {
+    "dilations": [
+     1,
+     1
+    ],
+    "group": 1,
+    "kernel_shape": [
+     1,
+     5
+    ],
+    "pads": [
+     0,
+     2,
+     0,
+     2
+    ],
+    "strides": [
+     1,
+     2
+    ]
+   },
+   "inputs": [
+    "input.3",
+    "onnx::Conv_3380",
+    "onnx::Conv_3381"
+   ],
+   "outputs": [
+    "onnx::PRelu_3379"
+   ],
+   "weights": [
+    {
+     "name": "onnx::Conv_3380",
+     "shape": [
+      16,
+      9,
+      1,
+      5
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "onnx::Conv_3381",
+     "shape": [
+      16
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 76,
+   "op": "PRelu",
+   "node": "PRelu_76",
+   "attrs": {},
+   "inputs": [
+    "onnx::PRelu_3379",
+    "onnx::PRelu_3422"
+   ],
+   "outputs": [
+    "input.11"
+   ],
+   "weights": [
+    {
+     "name": "onnx::PRelu_3422",
+     "shape": [
+      1,
+      1,
+      1
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 77,
+   "op": "Conv",
+   "node": "Conv_77",
+   "attrs": {
+    "dilations": [
+     1,
+     1
+    ],
+    "group": 2,
+    "kernel_shape": [
+     1,
+     5
+    ],
+    "pads": [
+     0,
+     2,
+     0,
+     2
+    ],
+    "strides": [
+     1,
+     2
+    ]
+   },
+   "inputs": [
+    "input.11",
+    "onnx::Conv_3383",
+    "onnx::Conv_3384"
+   ],
+   "outputs": [
+    "onnx::PRelu_3382"
+   ],
+   "weights": [
+    {
+     "name": "onnx::Conv_3383",
+     "shape": [
+      16,
+      8,
+      1,
+      5
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "onnx::Conv_3384",
+     "shape": [
+      16
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 78,
+   "op": "PRelu",
+   "node": "PRelu_78",
+   "attrs": {},
+   "inputs": [
+    "onnx::PRelu_3382",
+    "onnx::PRelu_3423"
+   ],
+   "outputs": [
+    "onnx::Slice_377"
+   ],
+   "weights": [
+    {
+     "name": "onnx::PRelu_3423",
+     "shape": [
+      1,
+      1,
+      1
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 139,
+   "op": "Conv",
+   "node": "Conv_139",
+   "attrs": {
+    "dilations": [
+     1,
+     1
+    ],
+    "group": 1,
+    "kernel_shape": [
+     1,
+     1
+    ],
+    "pads": [
+     0,
+     0,
+     0,
+     0
+    ],
+    "strides": [
+     1,
+     1
+    ]
+   },
+   "inputs": [
+    "input.23",
+    "onnx::Conv_3386",
+    "onnx::Conv_3387"
+   ],
+   "outputs": [
+    "onnx::PRelu_3385"
+   ],
+   "weights": [
+    {
+     "name": "onnx::Conv_3386",
+     "shape": [
+      16,
+      24,
+      1,
+      1
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "onnx::Conv_3387",
+     "shape": [
+      16
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 140,
+   "op": "PRelu",
+   "node": "PRelu_140",
+   "attrs": {},
+   "inputs": [
+    "onnx::PRelu_3385",
+    "onnx::PRelu_3431"
+   ],
+   "outputs": [
+    "onnx::Concat_456"
+   ],
+   "weights": [
+    {
+     "name": "onnx::PRelu_3431",
+     "shape": [
+      1,
+      1,
+      1
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 147,
+   "op": "Conv",
+   "node": "Conv_147",
+   "attrs": {
+    "dilations": [
+     1,
+     1
+    ],
+    "group": 16,
+    "kernel_shape": [
+     3,
+     3
+    ],
+    "pads": [
+     0,
+     1,
+     0,
+     1
+    ],
+    "strides": [
+     1,
+     1
+    ]
+   },
+   "inputs": [
+    "input.31",
+    "onnx::Conv_3389",
+    "onnx::Conv_3390"
+   ],
+   "outputs": [
+    "onnx::PRelu_3388"
+   ],
+   "weights": [
+    {
+     "name": "onnx::Conv_3389",
+     "shape": [
+      16,
+      1,
+      3,
+      3
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "onnx::Conv_3390",
+     "shape": [
+      16
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 148,
+   "op": "PRelu",
+   "node": "PRelu_148",
+   "attrs": {},
+   "inputs": [
+    "onnx::PRelu_3388",
+    "onnx::PRelu_3432"
+   ],
+   "outputs": [
+    "input.39"
+   ],
+   "weights": [
+    {
+     "name": "onnx::PRelu_3432",
+     "shape": [
+      1,
+      1,
+      1
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 149,
+   "op": "Conv",
+   "node": "Conv_149",
+   "attrs": {
+    "dilations": [
+     1,
+     1
+    ],
+    "group": 1,
+    "kernel_shape": [
+     1,
+     1
+    ],
+    "pads": [
+     0,
+     0,
+     0,
+     0
+    ],
+    "strides": [
+     1,
+     1
+    ]
+   },
+   "inputs": [
+    "input.39",
+    "onnx::Conv_3392",
+    "onnx::Conv_3393"
+   ],
+   "outputs": [
+    "onnx::Pow_3391"
+   ],
+   "weights": [
+    {
+     "name": "onnx::Conv_3392",
+     "shape": [
+      8,
+      16,
+      1,
+      1
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "onnx::Conv_3393",
+     "shape": [
+      8
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 153,
+   "op": "GRU",
+   "node": "GRU_153",
+   "attrs": {
+    "hidden_size": 16,
+    "linear_before_reset": 1
+   },
+   "inputs": [
+    "onnx::GRU_473",
+    "onnx::GRU_3451",
+    "onnx::GRU_3452",
+    "onnx::GRU_3453",
+    "",
+    "hidden"
+   ],
+   "outputs": [
+    "onnx::Squeeze_531",
+    "onnx::Expand_532"
+   ],
+   "weights": [
+    {
+     "name": "onnx::GRU_3451",
+     "shape": [
+      1,
+      48,
+      8
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "onnx::GRU_3452",
+     "shape": [
+      1,
+      48,
+      16
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "onnx::GRU_3453",
+     "shape": [
+      1,
+      96
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 156,
+   "op": "MatMul",
+   "node": "MatMul_156",
+   "attrs": {},
+   "inputs": [
+    "onnx::MatMul_534",
+    "onnx::MatMul_3454"
+   ],
+   "outputs": [
+    "onnx::Add_536"
+   ],
+   "weights": [
+    {
+     "name": "onnx::MatMul_3454",
+     "shape": [
+      16,
+      8
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 329,
+   "op": "Conv",
+   "node": "Conv_329",
+   "attrs": {
+    "dilations": [
+     1,
+     1
+    ],
+    "group": 1,
+    "kernel_shape": [
+     1,
+     1
+    ],
+    "pads": [
+     0,
+     0,
+     0,
+     0
+    ],
+    "strides": [
+     1,
+     1
+    ]
+   },
+   "inputs": [
+    "input.55",
+    "onnx::Conv_3395",
+    "onnx::Conv_3396"
+   ],
+   "outputs": [
+    "onnx::PRelu_3394"
+   ],
+   "weights": [
+    {
+     "name": "onnx::Conv_3395",
+     "shape": [
+      16,
+      24,
+      1,
+      1
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "onnx::Conv_3396",
+     "shape": [
+      16
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 330,
+   "op": "PRelu",
+   "node": "PRelu_330",
+   "attrs": {},
+   "inputs": [
+    "onnx::PRelu_3394",
+    "onnx::PRelu_3472"
+   ],
+   "outputs": [
+    "onnx::Concat_743"
+   ],
+   "weights": [
+    {
+     "name": "onnx::PRelu_3472",
+     "shape": [
+      1,
+      1,
+      1
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 337,
+   "op": "Conv",
+   "node": "Conv_337",
+   "attrs": {
+    "dilations": [
+     2,
+     1
+    ],
+    "group": 16,
+    "kernel_shape": [
+     3,
+     3
+    ],
+    "pads": [
+     0,
+     1,
+     0,
+     1
+    ],
+    "strides": [
+     1,
+     1
+    ]
+   },
+   "inputs": [
+    "input.63",
+    "onnx::Conv_3398",
+    "onnx::Conv_3399"
+   ],
+   "outputs": [
+    "onnx::PRelu_3397"
+   ],
+   "weights": [
+    {
+     "name": "onnx::Conv_3398",
+     "shape": [
+      16,
+      1,
+      3,
+      3
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "onnx::Conv_3399",
+     "shape": [
+      16
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 338,
+   "op": "PRelu",
+   "node": "PRelu_338",
+   "attrs": {},
+   "inputs": [
+    "onnx::PRelu_3397",
+    "onnx::PRelu_3473"
+   ],
+   "outputs": [
+    "input.71"
+   ],
+   "weights": [
+    {
+     "name": "onnx::PRelu_3473",
+     "shape": [
+      1,
+      1,
+      1
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 339,
+   "op": "Conv",
+   "node": "Conv_339",
+   "attrs": {
+    "dilations": [
+     1,
+     1
+    ],
+    "group": 1,
+    "kernel_shape": [
+     1,
+     1
+    ],
+    "pads": [
+     0,
+     0,
+     0,
+     0
+    ],
+    "strides": [
+     1,
+     1
+    ]
+   },
+   "inputs": [
+    "input.71",
+    "onnx::Conv_3401",
+    "onnx::Conv_3402"
+   ],
+   "outputs": [
+    "onnx::Pow_3400"
+   ],
+   "weights": [
+    {
+     "name": "onnx::Conv_3401",
+     "shape": [
+      8,
+      16,
+      1,
+      1
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "onnx::Conv_3402",
+     "shape": [
+      8
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 343,
+   "op": "GRU",
+   "node": "GRU_343",
+   "attrs": {
+    "hidden_size": 16,
+    "linear_before_reset": 1
+   },
+   "inputs": [
+    "onnx::GRU_760",
+    "onnx::GRU_3492",
+    "onnx::GRU_3493",
+    "onnx::GRU_3494",
+    "",
+    "hidden.3"
+   ],
+   "outputs": [
+    "onnx::Squeeze_818",
+    "onnx::Expand_819"
+   ],
+   "weights": [
+    {
+     "name": "onnx::GRU_3492",
+     "shape": [
+      1,
+      48,
+      8
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "onnx::GRU_3493",
+     "shape": [
+      1,
+      48,
+      16
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "onnx::GRU_3494",
+     "shape": [
+      1,
+      96
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 346,
+   "op": "MatMul",
+   "node": "MatMul_346",
+   "attrs": {},
+   "inputs": [
+    "onnx::MatMul_821",
+    "onnx::MatMul_3495"
+   ],
+   "outputs": [
+    "onnx::Add_823"
+   ],
+   "weights": [
+    {
+     "name": "onnx::MatMul_3495",
+     "shape": [
+      16,
+      8
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 519,
+   "op": "Conv",
+   "node": "Conv_519",
+   "attrs": {
+    "dilations": [
+     1,
+     1
+    ],
+    "group": 1,
+    "kernel_shape": [
+     1,
+     1
+    ],
+    "pads": [
+     0,
+     0,
+     0,
+     0
+    ],
+    "strides": [
+     1,
+     1
+    ]
+   },
+   "inputs": [
+    "input.87",
+    "onnx::Conv_3404",
+    "onnx::Conv_3405"
+   ],
+   "outputs": [
+    "onnx::PRelu_3403"
+   ],
+   "weights": [
+    {
+     "name": "onnx::Conv_3404",
+     "shape": [
+      16,
+      24,
+      1,
+      1
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "onnx::Conv_3405",
+     "shape": [
+      16
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 520,
+   "op": "PRelu",
+   "node": "PRelu_520",
+   "attrs": {},
+   "inputs": [
+    "onnx::PRelu_3403",
+    "onnx::PRelu_3513"
+   ],
+   "outputs": [
+    "onnx::Concat_1030"
+   ],
+   "weights": [
+    {
+     "name": "onnx::PRelu_3513",
+     "shape": [
+      1,
+      1,
+      1
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 527,
+   "op": "Conv",
+   "node": "Conv_527",
+   "attrs": {
+    "dilations": [
+     5,
+     1
+    ],
+    "group": 16,
+    "kernel_shape": [
+     3,
+     3
+    ],
+    "pads": [
+     0,
+     1,
+     0,
+     1
+    ],
+    "strides": [
+     1,
+     1
+    ]
+   },
+   "inputs": [
+    "input.95",
+    "onnx::Conv_3407",
+    "onnx::Conv_3408"
+   ],
+   "outputs": [
+    "onnx::PRelu_3406"
+   ],
+   "weights": [
+    {
+     "name": "onnx::Conv_3407",
+     "shape": [
+      16,
+      1,
+      3,
+      3
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "onnx::Conv_3408",
+     "shape": [
+      16
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 528,
+   "op": "PRelu",
+   "node": "PRelu_528",
+   "attrs": {},
+   "inputs": [
+    "onnx::PRelu_3406",
+    "onnx::PRelu_3514"
+   ],
+   "outputs": [
+    "input.103"
+   ],
+   "weights": [
+    {
+     "name": "onnx::PRelu_3514",
+     "shape": [
+      1,
+      1,
+      1
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 529,
+   "op": "Conv",
+   "node": "Conv_529",
+   "attrs": {
+    "dilations": [
+     1,
+     1
+    ],
+    "group": 1,
+    "kernel_shape": [
+     1,
+     1
+    ],
+    "pads": [
+     0,
+     0,
+     0,
+     0
+    ],
+    "strides": [
+     1,
+     1
+    ]
+   },
+   "inputs": [
+    "input.103",
+    "onnx::Conv_3410",
+    "onnx::Conv_3411"
+   ],
+   "outputs": [
+    "onnx::Pow_3409"
+   ],
+   "weights": [
+    {
+     "name": "onnx::Conv_3410",
+     "shape": [
+      8,
+      16,
+      1,
+      1
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "onnx::Conv_3411",
+     "shape": [
+      8
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 533,
+   "op": "GRU",
+   "node": "GRU_533",
+   "attrs": {
+    "hidden_size": 16,
+    "linear_before_reset": 1
+   },
+   "inputs": [
+    "onnx::GRU_1047",
+    "onnx::GRU_3533",
+    "onnx::GRU_3534",
+    "onnx::GRU_3535",
+    "",
+    "hidden.7"
+   ],
+   "outputs": [
+    "onnx::Squeeze_1105",
+    "onnx::Expand_1106"
+   ],
+   "weights": [
+    {
+     "name": "onnx::GRU_3533",
+     "shape": [
+      1,
+      48,
+      8
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "onnx::GRU_3534",
+     "shape": [
+      1,
+      48,
+      16
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "onnx::GRU_3535",
+     "shape": [
+      1,
+      96
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 536,
+   "op": "MatMul",
+   "node": "MatMul_536",
+   "attrs": {},
+   "inputs": [
+    "onnx::MatMul_1108",
+    "onnx::MatMul_3536"
+   ],
+   "outputs": [
+    "onnx::Add_1110"
+   ],
+   "weights": [
+    {
+     "name": "onnx::MatMul_3536",
+     "shape": [
+      16,
+      8
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 700,
+   "op": "GRU",
+   "node": "GRU_700",
+   "attrs": {
+    "direction": "bidirectional",
+    "hidden_size": 4,
+    "linear_before_reset": 1
+   },
+   "inputs": [
+    "onnx::GRU_1300",
+    "onnx::GRU_3595",
+    "onnx::GRU_3596",
+    "onnx::GRU_3594",
+    "",
+    "onnx::GRU_1296"
+   ],
+   "outputs": [
+    "onnx::Transpose_1417",
+    "1418"
+   ],
+   "weights": [
+    {
+     "name": "onnx::GRU_3595",
+     "shape": [
+      2,
+      12,
+      8
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "onnx::GRU_3596",
+     "shape": [
+      2,
+      12,
+      4
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "onnx::GRU_3594",
+     "shape": [
+      2,
+      24
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 706,
+   "op": "GRU",
+   "node": "GRU_706",
+   "attrs": {
+    "direction": "bidirectional",
+    "hidden_size": 4,
+    "linear_before_reset": 1
+   },
+   "inputs": [
+    "onnx::GRU_1423",
+    "onnx::GRU_3638",
+    "onnx::GRU_3639",
+    "onnx::GRU_3637",
+    "",
+    "onnx::GRU_1299"
+   ],
+   "outputs": [
+    "onnx::Transpose_1540",
+    "1541"
+   ],
+   "weights": [
+    {
+     "name": "onnx::GRU_3638",
+     "shape": [
+      2,
+      12,
+      8
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "onnx::GRU_3639",
+     "shape": [
+      2,
+      12,
+      4
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "onnx::GRU_3637",
+     "shape": [
+      2,
+      24
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 712,
+   "op": "MatMul",
+   "node": "MatMul_712",
+   "attrs": {},
+   "inputs": [
+    "onnx::MatMul_1546",
+    "onnx::MatMul_3640"
+   ],
+   "outputs": [
+    "onnx::Add_1548"
+   ],
+   "weights": [
+    {
+     "name": "onnx::MatMul_3640",
+     "shape": [
+      16,
+      16
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 780,
+   "op": "GRU",
+   "node": "GRU_780",
+   "attrs": {
+    "hidden_size": 8,
+    "linear_before_reset": 1
+   },
+   "inputs": [
+    "onnx::GRU_1621",
+    "onnx::GRU_3661",
+    "onnx::GRU_3662",
+    "onnx::GRU_3663",
+    "",
+    "onnx::GRU_1617"
+   ],
+   "outputs": [
+    "onnx::Squeeze_1679",
+    "onnx::Concat_1680"
+   ],
+   "weights": [
+    {
+     "name": "onnx::GRU_3661",
+     "shape": [
+      1,
+      24,
+      8
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "onnx::GRU_3662",
+     "shape": [
+      1,
+      24,
+      8
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "onnx::GRU_3663",
+     "shape": [
+      1,
+      48
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 784,
+   "op": "GRU",
+   "node": "GRU_784",
+   "attrs": {
+    "hidden_size": 8,
+    "linear_before_reset": 1
+   },
+   "inputs": [
+    "onnx::GRU_1683",
+    "onnx::GRU_3681",
+    "onnx::GRU_3682",
+    "onnx::GRU_3683",
+    "",
+    "onnx::GRU_1620"
+   ],
+   "outputs": [
+    "onnx::Squeeze_1741",
+    "onnx::Concat_1742"
+   ],
+   "weights": [
+    {
+     "name": "onnx::GRU_3681",
+     "shape": [
+      1,
+      24,
+      8
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "onnx::GRU_3682",
+     "shape": [
+      1,
+      24,
+      8
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "onnx::GRU_3683",
+     "shape": [
+      1,
+      48
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 789,
+   "op": "MatMul",
+   "node": "MatMul_789",
+   "attrs": {},
+   "inputs": [
+    "onnx::MatMul_1745",
+    "onnx::MatMul_3684"
+   ],
+   "outputs": [
+    "onnx::Add_1748"
+   ],
+   "weights": [
+    {
+     "name": "onnx::MatMul_3684",
+     "shape": [
+      16,
+      16
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 877,
+   "op": "GRU",
+   "node": "GRU_877",
+   "attrs": {
+    "direction": "bidirectional",
+    "hidden_size": 4,
+    "linear_before_reset": 1
+   },
+   "inputs": [
+    "onnx::GRU_1848",
+    "onnx::GRU_3733",
+    "onnx::GRU_3734",
+    "onnx::GRU_3732",
+    "",
+    "onnx::GRU_1844"
+   ],
+   "outputs": [
+    "onnx::Transpose_1965",
+    "1966"
+   ],
+   "weights": [
+    {
+     "name": "onnx::GRU_3733",
+     "shape": [
+      2,
+      12,
+      8
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "onnx::GRU_3734",
+     "shape": [
+      2,
+      12,
+      4
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "onnx::GRU_3732",
+     "shape": [
+      2,
+      24
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 883,
+   "op": "GRU",
+   "node": "GRU_883",
+   "attrs": {
+    "direction": "bidirectional",
+    "hidden_size": 4,
+    "linear_before_reset": 1
+   },
+   "inputs": [
+    "onnx::GRU_1971",
+    "onnx::GRU_3776",
+    "onnx::GRU_3777",
+    "onnx::GRU_3775",
+    "",
+    "onnx::GRU_1847"
+   ],
+   "outputs": [
+    "onnx::Transpose_2088",
+    "2089"
+   ],
+   "weights": [
+    {
+     "name": "onnx::GRU_3776",
+     "shape": [
+      2,
+      12,
+      8
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "onnx::GRU_3777",
+     "shape": [
+      2,
+      12,
+      4
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "onnx::GRU_3775",
+     "shape": [
+      2,
+      24
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 889,
+   "op": "MatMul",
+   "node": "MatMul_889",
+   "attrs": {},
+   "inputs": [
+    "onnx::MatMul_2094",
+    "onnx::MatMul_3778"
+   ],
+   "outputs": [
+    "onnx::Add_2096"
+   ],
+   "weights": [
+    {
+     "name": "onnx::MatMul_3778",
+     "shape": [
+      16,
+      16
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 957,
+   "op": "GRU",
+   "node": "GRU_957",
+   "attrs": {
+    "hidden_size": 8,
+    "linear_before_reset": 1
+   },
+   "inputs": [
+    "onnx::GRU_2169",
+    "onnx::GRU_3799",
+    "onnx::GRU_3800",
+    "onnx::GRU_3801",
+    "",
+    "onnx::GRU_2165"
+   ],
+   "outputs": [
+    "onnx::Squeeze_2227",
+    "onnx::Concat_2228"
+   ],
+   "weights": [
+    {
+     "name": "onnx::GRU_3799",
+     "shape": [
+      1,
+      24,
+      8
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "onnx::GRU_3800",
+     "shape": [
+      1,
+      24,
+      8
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "onnx::GRU_3801",
+     "shape": [
+      1,
+      48
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 961,
+   "op": "GRU",
+   "node": "GRU_961",
+   "attrs": {
+    "hidden_size": 8,
+    "linear_before_reset": 1
+   },
+   "inputs": [
+    "onnx::GRU_2231",
+    "onnx::GRU_3819",
+    "onnx::GRU_3820",
+    "onnx::GRU_3821",
+    "",
+    "onnx::GRU_2168"
+   ],
+   "outputs": [
+    "onnx::Squeeze_2289",
+    "onnx::Concat_2290"
+   ],
+   "weights": [
+    {
+     "name": "onnx::GRU_3819",
+     "shape": [
+      1,
+      24,
+      8
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "onnx::GRU_3820",
+     "shape": [
+      1,
+      24,
+      8
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "onnx::GRU_3821",
+     "shape": [
+      1,
+      48
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 966,
+   "op": "MatMul",
+   "node": "MatMul_966",
+   "attrs": {},
+   "inputs": [
+    "onnx::MatMul_2293",
+    "onnx::MatMul_3822"
+   ],
+   "outputs": [
+    "onnx::Add_2296"
+   ],
+   "weights": [
+    {
+     "name": "onnx::MatMul_3822",
+     "shape": [
+      16,
+      16
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 1094,
+   "op": "ConvTranspose",
+   "node": "ConvTranspose_1094",
+   "attrs": {
+    "dilations": [
+     1,
+     1
+    ],
+    "group": 1,
+    "kernel_shape": [
+     1,
+     1
+    ],
+    "pads": [
+     0,
+     0,
+     0,
+     0
+    ],
+    "strides": [
+     1,
+     1
+    ]
+   },
+   "inputs": [
+    "onnx::ConvTranspose_2446",
+    "decoder.de_convs.0.point_conv1.weight",
+    "decoder.de_convs.0.point_conv1.bias"
+   ],
+   "outputs": [
+    "input.135"
+   ],
+   "weights": [
+    {
+     "name": "decoder.de_convs.0.point_conv1.weight",
+     "shape": [
+      24,
+      16,
+      1,
+      1
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "decoder.de_convs.0.point_conv1.bias",
+     "shape": [
+      16
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 1095,
+   "op": "BatchNormalization",
+   "node": "BatchNormalization_1095",
+   "attrs": {},
+   "inputs": [
+    "input.135",
+    "decoder.de_convs.0.point_bn1.weight",
+    "decoder.de_convs.0.point_bn1.bias",
+    "decoder.de_convs.0.point_bn1.running_mean",
+    "decoder.de_convs.0.point_bn1.running_var"
+   ],
+   "outputs": [
+    "onnx::PRelu_2448"
+   ],
+   "weights": [
+    {
+     "name": "decoder.de_convs.0.point_bn1.weight",
+     "shape": [
+      16
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "decoder.de_convs.0.point_bn1.bias",
+     "shape": [
+      16
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "decoder.de_convs.0.point_bn1.running_mean",
+     "shape": [
+      16
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "decoder.de_convs.0.point_bn1.running_var",
+     "shape": [
+      16
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 1096,
+   "op": "PRelu",
+   "node": "PRelu_1096",
+   "attrs": {},
+   "inputs": [
+    "onnx::PRelu_2448",
+    "onnx::PRelu_3834"
+   ],
+   "outputs": [
+    "onnx::Concat_2450"
+   ],
+   "weights": [
+    {
+     "name": "onnx::PRelu_3834",
+     "shape": [
+      1,
+      1,
+      1
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 1098,
+   "op": "ConvTranspose",
+   "node": "ConvTranspose_1098",
+   "attrs": {
+    "dilations": [
+     5,
+     1
+    ],
+    "group": 16,
+    "kernel_shape": [
+     3,
+     3
+    ],
+    "pads": [
+     10,
+     1,
+     10,
+     1
+    ],
+    "strides": [
+     1,
+     1
+    ]
+   },
+   "inputs": [
+    "onnx::ConvTranspose_2451",
+    "decoder.de_convs.0.depth_conv.ConvTranspose2d.weight",
+    "decoder.de_convs.0.depth_conv.ConvTranspose2d.bias"
+   ],
+   "outputs": [
+    "input.139"
+   ],
+   "weights": [
+    {
+     "name": "decoder.de_convs.0.depth_conv.ConvTranspose2d.weight",
+     "shape": [
+      16,
+      1,
+      3,
+      3
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "decoder.de_convs.0.depth_conv.ConvTranspose2d.bias",
+     "shape": [
+      16
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 1104,
+   "op": "BatchNormalization",
+   "node": "BatchNormalization_1104",
+   "attrs": {},
+   "inputs": [
+    "input.139",
+    "decoder.de_convs.0.depth_bn.weight",
+    "decoder.de_convs.0.depth_bn.bias",
+    "decoder.de_convs.0.depth_bn.running_mean",
+    "decoder.de_convs.0.depth_bn.running_var"
+   ],
+   "outputs": [
+    "onnx::PRelu_2458"
+   ],
+   "weights": [
+    {
+     "name": "decoder.de_convs.0.depth_bn.weight",
+     "shape": [
+      16
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "decoder.de_convs.0.depth_bn.bias",
+     "shape": [
+      16
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "decoder.de_convs.0.depth_bn.running_mean",
+     "shape": [
+      16
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "decoder.de_convs.0.depth_bn.running_var",
+     "shape": [
+      16
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 1105,
+   "op": "PRelu",
+   "node": "PRelu_1105",
+   "attrs": {},
+   "inputs": [
+    "onnx::PRelu_2458",
+    "onnx::PRelu_3835"
+   ],
+   "outputs": [
+    "onnx::ConvTranspose_2460"
+   ],
+   "weights": [
+    {
+     "name": "onnx::PRelu_3835",
+     "shape": [
+      1,
+      1,
+      1
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 1106,
+   "op": "ConvTranspose",
+   "node": "ConvTranspose_1106",
+   "attrs": {
+    "dilations": [
+     1,
+     1
+    ],
+    "group": 1,
+    "kernel_shape": [
+     1,
+     1
+    ],
+    "pads": [
+     0,
+     0,
+     0,
+     0
+    ],
+    "strides": [
+     1,
+     1
+    ]
+   },
+   "inputs": [
+    "onnx::ConvTranspose_2460",
+    "decoder.de_convs.0.point_conv2.weight",
+    "decoder.de_convs.0.point_conv2.bias"
+   ],
+   "outputs": [
+    "input.143"
+   ],
+   "weights": [
+    {
+     "name": "decoder.de_convs.0.point_conv2.weight",
+     "shape": [
+      16,
+      8,
+      1,
+      1
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "decoder.de_convs.0.point_conv2.bias",
+     "shape": [
+      8
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 1107,
+   "op": "BatchNormalization",
+   "node": "BatchNormalization_1107",
+   "attrs": {},
+   "inputs": [
+    "input.143",
+    "decoder.de_convs.0.point_bn2.weight",
+    "decoder.de_convs.0.point_bn2.bias",
+    "decoder.de_convs.0.point_bn2.running_mean",
+    "decoder.de_convs.0.point_bn2.running_var"
+   ],
+   "outputs": [
+    "onnx::Pow_2462"
+   ],
+   "weights": [
+    {
+     "name": "decoder.de_convs.0.point_bn2.weight",
+     "shape": [
+      8
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "decoder.de_convs.0.point_bn2.bias",
+     "shape": [
+      8
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "decoder.de_convs.0.point_bn2.running_mean",
+     "shape": [
+      8
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "decoder.de_convs.0.point_bn2.running_var",
+     "shape": [
+      8
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 1111,
+   "op": "GRU",
+   "node": "GRU_1111",
+   "attrs": {
+    "hidden_size": 16,
+    "linear_before_reset": 1
+   },
+   "inputs": [
+    "onnx::GRU_2467",
+    "onnx::GRU_3854",
+    "onnx::GRU_3855",
+    "onnx::GRU_3856",
+    "",
+    "hidden.11"
+   ],
+   "outputs": [
+    "onnx::Squeeze_2525",
+    "onnx::Expand_2526"
+   ],
+   "weights": [
+    {
+     "name": "onnx::GRU_3854",
+     "shape": [
+      1,
+      48,
+      8
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "onnx::GRU_3855",
+     "shape": [
+      1,
+      48,
+      16
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "onnx::GRU_3856",
+     "shape": [
+      1,
+      96
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 1114,
+   "op": "MatMul",
+   "node": "MatMul_1114",
+   "attrs": {},
+   "inputs": [
+    "onnx::MatMul_2528",
+    "onnx::MatMul_3857"
+   ],
+   "outputs": [
+    "onnx::Add_2530"
+   ],
+   "weights": [
+    {
+     "name": "onnx::MatMul_3857",
+     "shape": [
+      16,
+      8
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 1331,
+   "op": "ConvTranspose",
+   "node": "ConvTranspose_1331",
+   "attrs": {
+    "dilations": [
+     1,
+     1
+    ],
+    "group": 1,
+    "kernel_shape": [
+     1,
+     1
+    ],
+    "pads": [
+     0,
+     0,
+     0,
+     0
+    ],
+    "strides": [
+     1,
+     1
+    ]
+   },
+   "inputs": [
+    "onnx::ConvTranspose_2765",
+    "decoder.de_convs.1.point_conv1.weight",
+    "decoder.de_convs.1.point_conv1.bias"
+   ],
+   "outputs": [
+    "input.155"
+   ],
+   "weights": [
+    {
+     "name": "decoder.de_convs.1.point_conv1.weight",
+     "shape": [
+      24,
+      16,
+      1,
+      1
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "decoder.de_convs.1.point_conv1.bias",
+     "shape": [
+      16
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 1332,
+   "op": "BatchNormalization",
+   "node": "BatchNormalization_1332",
+   "attrs": {},
+   "inputs": [
+    "input.155",
+    "decoder.de_convs.1.point_bn1.weight",
+    "decoder.de_convs.1.point_bn1.bias",
+    "decoder.de_convs.1.point_bn1.running_mean",
+    "decoder.de_convs.1.point_bn1.running_var"
+   ],
+   "outputs": [
+    "onnx::PRelu_2767"
+   ],
+   "weights": [
+    {
+     "name": "decoder.de_convs.1.point_bn1.weight",
+     "shape": [
+      16
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "decoder.de_convs.1.point_bn1.bias",
+     "shape": [
+      16
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "decoder.de_convs.1.point_bn1.running_mean",
+     "shape": [
+      16
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "decoder.de_convs.1.point_bn1.running_var",
+     "shape": [
+      16
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 1333,
+   "op": "PRelu",
+   "node": "PRelu_1333",
+   "attrs": {},
+   "inputs": [
+    "onnx::PRelu_2767",
+    "onnx::PRelu_3867"
+   ],
+   "outputs": [
+    "onnx::Concat_2769"
+   ],
+   "weights": [
+    {
+     "name": "onnx::PRelu_3867",
+     "shape": [
+      1,
+      1,
+      1
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 1335,
+   "op": "ConvTranspose",
+   "node": "ConvTranspose_1335",
+   "attrs": {
+    "dilations": [
+     2,
+     1
+    ],
+    "group": 16,
+    "kernel_shape": [
+     3,
+     3
+    ],
+    "pads": [
+     4,
+     1,
+     4,
+     1
+    ],
+    "strides": [
+     1,
+     1
+    ]
+   },
+   "inputs": [
+    "onnx::ConvTranspose_2770",
+    "decoder.de_convs.1.depth_conv.ConvTranspose2d.weight",
+    "decoder.de_convs.1.depth_conv.ConvTranspose2d.bias"
+   ],
+   "outputs": [
+    "input.159"
+   ],
+   "weights": [
+    {
+     "name": "decoder.de_convs.1.depth_conv.ConvTranspose2d.weight",
+     "shape": [
+      16,
+      1,
+      3,
+      3
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "decoder.de_convs.1.depth_conv.ConvTranspose2d.bias",
+     "shape": [
+      16
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 1341,
+   "op": "BatchNormalization",
+   "node": "BatchNormalization_1341",
+   "attrs": {},
+   "inputs": [
+    "input.159",
+    "decoder.de_convs.1.depth_bn.weight",
+    "decoder.de_convs.1.depth_bn.bias",
+    "decoder.de_convs.1.depth_bn.running_mean",
+    "decoder.de_convs.1.depth_bn.running_var"
+   ],
+   "outputs": [
+    "onnx::PRelu_2777"
+   ],
+   "weights": [
+    {
+     "name": "decoder.de_convs.1.depth_bn.weight",
+     "shape": [
+      16
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "decoder.de_convs.1.depth_bn.bias",
+     "shape": [
+      16
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "decoder.de_convs.1.depth_bn.running_mean",
+     "shape": [
+      16
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "decoder.de_convs.1.depth_bn.running_var",
+     "shape": [
+      16
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 1342,
+   "op": "PRelu",
+   "node": "PRelu_1342",
+   "attrs": {},
+   "inputs": [
+    "onnx::PRelu_2777",
+    "onnx::PRelu_3868"
+   ],
+   "outputs": [
+    "onnx::ConvTranspose_2779"
+   ],
+   "weights": [
+    {
+     "name": "onnx::PRelu_3868",
+     "shape": [
+      1,
+      1,
+      1
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 1343,
+   "op": "ConvTranspose",
+   "node": "ConvTranspose_1343",
+   "attrs": {
+    "dilations": [
+     1,
+     1
+    ],
+    "group": 1,
+    "kernel_shape": [
+     1,
+     1
+    ],
+    "pads": [
+     0,
+     0,
+     0,
+     0
+    ],
+    "strides": [
+     1,
+     1
+    ]
+   },
+   "inputs": [
+    "onnx::ConvTranspose_2779",
+    "decoder.de_convs.1.point_conv2.weight",
+    "decoder.de_convs.1.point_conv2.bias"
+   ],
+   "outputs": [
+    "input.163"
+   ],
+   "weights": [
+    {
+     "name": "decoder.de_convs.1.point_conv2.weight",
+     "shape": [
+      16,
+      8,
+      1,
+      1
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "decoder.de_convs.1.point_conv2.bias",
+     "shape": [
+      8
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 1344,
+   "op": "BatchNormalization",
+   "node": "BatchNormalization_1344",
+   "attrs": {},
+   "inputs": [
+    "input.163",
+    "decoder.de_convs.1.point_bn2.weight",
+    "decoder.de_convs.1.point_bn2.bias",
+    "decoder.de_convs.1.point_bn2.running_mean",
+    "decoder.de_convs.1.point_bn2.running_var"
+   ],
+   "outputs": [
+    "onnx::Pow_2781"
+   ],
+   "weights": [
+    {
+     "name": "decoder.de_convs.1.point_bn2.weight",
+     "shape": [
+      8
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "decoder.de_convs.1.point_bn2.bias",
+     "shape": [
+      8
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "decoder.de_convs.1.point_bn2.running_mean",
+     "shape": [
+      8
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "decoder.de_convs.1.point_bn2.running_var",
+     "shape": [
+      8
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 1348,
+   "op": "GRU",
+   "node": "GRU_1348",
+   "attrs": {
+    "hidden_size": 16,
+    "linear_before_reset": 1
+   },
+   "inputs": [
+    "onnx::GRU_2786",
+    "onnx::GRU_3887",
+    "onnx::GRU_3888",
+    "onnx::GRU_3889",
+    "",
+    "hidden.15"
+   ],
+   "outputs": [
+    "onnx::Squeeze_2844",
+    "onnx::Expand_2845"
+   ],
+   "weights": [
+    {
+     "name": "onnx::GRU_3887",
+     "shape": [
+      1,
+      48,
+      8
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "onnx::GRU_3888",
+     "shape": [
+      1,
+      48,
+      16
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "onnx::GRU_3889",
+     "shape": [
+      1,
+      96
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 1351,
+   "op": "MatMul",
+   "node": "MatMul_1351",
+   "attrs": {},
+   "inputs": [
+    "onnx::MatMul_2847",
+    "onnx::MatMul_3890"
+   ],
+   "outputs": [
+    "onnx::Add_2849"
+   ],
+   "weights": [
+    {
+     "name": "onnx::MatMul_3890",
+     "shape": [
+      16,
+      8
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 1568,
+   "op": "ConvTranspose",
+   "node": "ConvTranspose_1568",
+   "attrs": {
+    "dilations": [
+     1,
+     1
+    ],
+    "group": 1,
+    "kernel_shape": [
+     1,
+     1
+    ],
+    "pads": [
+     0,
+     0,
+     0,
+     0
+    ],
+    "strides": [
+     1,
+     1
+    ]
+   },
+   "inputs": [
+    "onnx::ConvTranspose_3084",
+    "decoder.de_convs.2.point_conv1.weight",
+    "decoder.de_convs.2.point_conv1.bias"
+   ],
+   "outputs": [
+    "input.175"
+   ],
+   "weights": [
+    {
+     "name": "decoder.de_convs.2.point_conv1.weight",
+     "shape": [
+      24,
+      16,
+      1,
+      1
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "decoder.de_convs.2.point_conv1.bias",
+     "shape": [
+      16
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 1569,
+   "op": "BatchNormalization",
+   "node": "BatchNormalization_1569",
+   "attrs": {},
+   "inputs": [
+    "input.175",
+    "decoder.de_convs.2.point_bn1.weight",
+    "decoder.de_convs.2.point_bn1.bias",
+    "decoder.de_convs.2.point_bn1.running_mean",
+    "decoder.de_convs.2.point_bn1.running_var"
+   ],
+   "outputs": [
+    "onnx::PRelu_3086"
+   ],
+   "weights": [
+    {
+     "name": "decoder.de_convs.2.point_bn1.weight",
+     "shape": [
+      16
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "decoder.de_convs.2.point_bn1.bias",
+     "shape": [
+      16
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "decoder.de_convs.2.point_bn1.running_mean",
+     "shape": [
+      16
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "decoder.de_convs.2.point_bn1.running_var",
+     "shape": [
+      16
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 1570,
+   "op": "PRelu",
+   "node": "PRelu_1570",
+   "attrs": {},
+   "inputs": [
+    "onnx::PRelu_3086",
+    "onnx::PRelu_3900"
+   ],
+   "outputs": [
+    "onnx::Concat_3088"
+   ],
+   "weights": [
+    {
+     "name": "onnx::PRelu_3900",
+     "shape": [
+      1,
+      1,
+      1
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 1572,
+   "op": "ConvTranspose",
+   "node": "ConvTranspose_1572",
+   "attrs": {
+    "dilations": [
+     1,
+     1
+    ],
+    "group": 16,
+    "kernel_shape": [
+     3,
+     3
+    ],
+    "pads": [
+     2,
+     1,
+     2,
+     1
+    ],
+    "strides": [
+     1,
+     1
+    ]
+   },
+   "inputs": [
+    "onnx::ConvTranspose_3089",
+    "decoder.de_convs.2.depth_conv.ConvTranspose2d.weight",
+    "decoder.de_convs.2.depth_conv.ConvTranspose2d.bias"
+   ],
+   "outputs": [
+    "input.179"
+   ],
+   "weights": [
+    {
+     "name": "decoder.de_convs.2.depth_conv.ConvTranspose2d.weight",
+     "shape": [
+      16,
+      1,
+      3,
+      3
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "decoder.de_convs.2.depth_conv.ConvTranspose2d.bias",
+     "shape": [
+      16
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 1578,
+   "op": "BatchNormalization",
+   "node": "BatchNormalization_1578",
+   "attrs": {},
+   "inputs": [
+    "input.179",
+    "decoder.de_convs.2.depth_bn.weight",
+    "decoder.de_convs.2.depth_bn.bias",
+    "decoder.de_convs.2.depth_bn.running_mean",
+    "decoder.de_convs.2.depth_bn.running_var"
+   ],
+   "outputs": [
+    "onnx::PRelu_3096"
+   ],
+   "weights": [
+    {
+     "name": "decoder.de_convs.2.depth_bn.weight",
+     "shape": [
+      16
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "decoder.de_convs.2.depth_bn.bias",
+     "shape": [
+      16
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "decoder.de_convs.2.depth_bn.running_mean",
+     "shape": [
+      16
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "decoder.de_convs.2.depth_bn.running_var",
+     "shape": [
+      16
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 1579,
+   "op": "PRelu",
+   "node": "PRelu_1579",
+   "attrs": {},
+   "inputs": [
+    "onnx::PRelu_3096",
+    "onnx::PRelu_3901"
+   ],
+   "outputs": [
+    "onnx::ConvTranspose_3098"
+   ],
+   "weights": [
+    {
+     "name": "onnx::PRelu_3901",
+     "shape": [
+      1,
+      1,
+      1
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 1580,
+   "op": "ConvTranspose",
+   "node": "ConvTranspose_1580",
+   "attrs": {
+    "dilations": [
+     1,
+     1
+    ],
+    "group": 1,
+    "kernel_shape": [
+     1,
+     1
+    ],
+    "pads": [
+     0,
+     0,
+     0,
+     0
+    ],
+    "strides": [
+     1,
+     1
+    ]
+   },
+   "inputs": [
+    "onnx::ConvTranspose_3098",
+    "decoder.de_convs.2.point_conv2.weight",
+    "decoder.de_convs.2.point_conv2.bias"
+   ],
+   "outputs": [
+    "input.183"
+   ],
+   "weights": [
+    {
+     "name": "decoder.de_convs.2.point_conv2.weight",
+     "shape": [
+      16,
+      8,
+      1,
+      1
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "decoder.de_convs.2.point_conv2.bias",
+     "shape": [
+      8
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 1581,
+   "op": "BatchNormalization",
+   "node": "BatchNormalization_1581",
+   "attrs": {},
+   "inputs": [
+    "input.183",
+    "decoder.de_convs.2.point_bn2.weight",
+    "decoder.de_convs.2.point_bn2.bias",
+    "decoder.de_convs.2.point_bn2.running_mean",
+    "decoder.de_convs.2.point_bn2.running_var"
+   ],
+   "outputs": [
+    "onnx::Pow_3100"
+   ],
+   "weights": [
+    {
+     "name": "decoder.de_convs.2.point_bn2.weight",
+     "shape": [
+      8
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "decoder.de_convs.2.point_bn2.bias",
+     "shape": [
+      8
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "decoder.de_convs.2.point_bn2.running_mean",
+     "shape": [
+      8
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "decoder.de_convs.2.point_bn2.running_var",
+     "shape": [
+      8
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 1585,
+   "op": "GRU",
+   "node": "GRU_1585",
+   "attrs": {
+    "hidden_size": 16,
+    "linear_before_reset": 1
+   },
+   "inputs": [
+    "onnx::GRU_3105",
+    "onnx::GRU_3920",
+    "onnx::GRU_3921",
+    "onnx::GRU_3922",
+    "",
+    "hidden.19"
+   ],
+   "outputs": [
+    "onnx::Squeeze_3163",
+    "onnx::Expand_3164"
+   ],
+   "weights": [
+    {
+     "name": "onnx::GRU_3920",
+     "shape": [
+      1,
+      48,
+      8
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "onnx::GRU_3921",
+     "shape": [
+      1,
+      48,
+      16
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "onnx::GRU_3922",
+     "shape": [
+      1,
+      96
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 1588,
+   "op": "MatMul",
+   "node": "MatMul_1588",
+   "attrs": {},
+   "inputs": [
+    "onnx::MatMul_3166",
+    "onnx::MatMul_3923"
+   ],
+   "outputs": [
+    "onnx::Add_3168"
+   ],
+   "weights": [
+    {
+     "name": "onnx::MatMul_3923",
+     "shape": [
+      16,
+      8
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 1716,
+   "op": "ConvTranspose",
+   "node": "ConvTranspose_1716",
+   "attrs": {
+    "dilations": [
+     1,
+     1
+    ],
+    "group": 2,
+    "kernel_shape": [
+     1,
+     5
+    ],
+    "pads": [
+     0,
+     2,
+     0,
+     2
+    ],
+    "strides": [
+     1,
+     2
+    ]
+   },
+   "inputs": [
+    "onnx::ConvTranspose_3300",
+    "decoder.de_convs.3.conv.weight",
+    "decoder.de_convs.3.conv.bias"
+   ],
+   "outputs": [
+    "input.191"
+   ],
+   "weights": [
+    {
+     "name": "decoder.de_convs.3.conv.weight",
+     "shape": [
+      16,
+      8,
+      1,
+      5
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "decoder.de_convs.3.conv.bias",
+     "shape": [
+      16
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 1717,
+   "op": "BatchNormalization",
+   "node": "BatchNormalization_1717",
+   "attrs": {},
+   "inputs": [
+    "input.191",
+    "decoder.de_convs.3.bn.weight",
+    "decoder.de_convs.3.bn.bias",
+    "decoder.de_convs.3.bn.running_mean",
+    "decoder.de_convs.3.bn.running_var"
+   ],
+   "outputs": [
+    "onnx::PRelu_3302"
+   ],
+   "weights": [
+    {
+     "name": "decoder.de_convs.3.bn.weight",
+     "shape": [
+      16
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "decoder.de_convs.3.bn.bias",
+     "shape": [
+      16
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "decoder.de_convs.3.bn.running_mean",
+     "shape": [
+      16
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "decoder.de_convs.3.bn.running_var",
+     "shape": [
+      16
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 1718,
+   "op": "PRelu",
+   "node": "PRelu_1718",
+   "attrs": {},
+   "inputs": [
+    "onnx::PRelu_3302",
+    "onnx::PRelu_3927"
+   ],
+   "outputs": [
+    "onnx::Add_3304"
+   ],
+   "weights": [
+    {
+     "name": "onnx::PRelu_3927",
+     "shape": [
+      1,
+      1,
+      1
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 1720,
+   "op": "ConvTranspose",
+   "node": "ConvTranspose_1720",
+   "attrs": {
+    "dilations": [
+     1,
+     1
+    ],
+    "group": 1,
+    "kernel_shape": [
+     1,
+     5
+    ],
+    "pads": [
+     0,
+     2,
+     0,
+     2
+    ],
+    "strides": [
+     1,
+     2
+    ]
+   },
+   "inputs": [
+    "onnx::ConvTranspose_3305",
+    "decoder.de_convs.4.conv.weight",
+    "decoder.de_convs.4.conv.bias"
+   ],
+   "outputs": [
+    "input.195"
+   ],
+   "weights": [
+    {
+     "name": "decoder.de_convs.4.conv.weight",
+     "shape": [
+      16,
+      2,
+      1,
+      5
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "decoder.de_convs.4.conv.bias",
+     "shape": [
+      2
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 1721,
+   "op": "BatchNormalization",
+   "node": "BatchNormalization_1721",
+   "attrs": {},
+   "inputs": [
+    "input.195",
+    "decoder.de_convs.4.bn.weight",
+    "decoder.de_convs.4.bn.bias",
+    "decoder.de_convs.4.bn.running_mean",
+    "decoder.de_convs.4.bn.running_var"
+   ],
+   "outputs": [
+    "onnx::Tanh_3307"
+   ],
+   "weights": [
+    {
+     "name": "decoder.de_convs.4.bn.weight",
+     "shape": [
+      2
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "decoder.de_convs.4.bn.bias",
+     "shape": [
+      2
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "decoder.de_convs.4.bn.running_mean",
+     "shape": [
+      2
+     ],
+     "dtype": "float32"
+    },
+    {
+     "name": "decoder.de_convs.4.bn.running_var",
+     "shape": [
+      2
+     ],
+     "dtype": "float32"
+    }
+   ]
+  },
+  {
+   "order": 1757,
+   "op": "MatMul",
+   "node": "MatMul_1757",
+   "attrs": {},
+   "inputs": [
+    "onnx::MatMul_3348",
+    "onnx::MatMul_3932"
+   ],
+   "outputs": [
+    "onnx::Concat_3350"
+   ],
+   "weights": [
+    {
+     "name": "onnx::MatMul_3932",
+     "shape": [
+      64,
+      192
+     ],
+     "dtype": "float32"
+    }
+   ]
+  }
+ ],
+ "erb_like_initializers": {},
+ "layernorm_initializers": {
+  "dpgrnn1.intra_ln.weight": [
+   33,
+   16
+  ],
+  "dpgrnn1.intra_ln.bias": [
+   33,
+   16
+  ],
+  "dpgrnn1.inter_ln.weight": [
+   33,
+   16
+  ],
+  "dpgrnn1.inter_ln.bias": [
+   33,
+   16
+  ],
+  "dpgrnn2.intra_ln.weight": [
+   33,
+   16
+  ],
+  "dpgrnn2.intra_ln.bias": [
+   33,
+   16
+  ],
+  "dpgrnn2.inter_ln.weight": [
+   33,
+   16
+  ],
+  "dpgrnn2.inter_ln.bias": [
+   33,
+   16
+  ]
+ },
+ "fc_initializers": {
+  "encoder.en_convs.2.tra.att_fc.bias": [
+   8
+  ],
+  "encoder.en_convs.3.tra.att_fc.bias": [
+   8
+  ],
+  "encoder.en_convs.4.tra.att_fc.bias": [
+   8
+  ],
+  "dpgrnn1.intra_fc.bias": [
+   16
+  ],
+  "dpgrnn1.inter_fc.bias": [
+   16
+  ],
+  "dpgrnn2.intra_fc.bias": [
+   16
+  ],
+  "dpgrnn2.inter_fc.bias": [
+   16
+  ],
+  "decoder.de_convs.0.tra.att_fc.bias": [
+   8
+  ],
+  "decoder.de_convs.1.tra.att_fc.bias": [
+   8
+  ],
+  "decoder.de_convs.2.tra.att_fc.bias": [
+   8
+  ]
+ }
+}

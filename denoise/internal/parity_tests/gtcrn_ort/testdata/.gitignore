@@ -1,0 +1,5 @@
+# e2e_golden.json (14 MB) is the offline Go-vs-onnxruntime E2E reference for
+# the OPT-IN ORT parity gate only (env-gated on ONNXRUNTIME_SHARED_LIB; never
+# read by default CI). Kept out of git for size — regenerate on demand with
+# tools/gtcrndump. The default-CI goldens (stft/blocks/self) ARE committed.
+e2e_golden.json

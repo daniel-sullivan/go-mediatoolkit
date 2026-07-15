@@ -55,7 +55,7 @@ var videoOrder = []string{"video/README.md", "codec/hwaccel/README.md", "codec/h
 
 var pipelinePkgs = map[string]bool{
 	"resample": true, "mutations": true, "loudness": true, "vad": true,
-	"aec": true, "generators": true, "timeline": true, "mixer": true, "buffers": true,
+	"aec": true, "denoise": true, "generators": true, "timeline": true, "mixer": true, "buffers": true,
 }
 
 var runtimePkgs = map[string]bool{

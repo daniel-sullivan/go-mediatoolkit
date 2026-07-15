@@ -1,0 +1,72 @@
+# RNNoise denoiser library — mise tasks
+# The C RNNoise 0.2 source is vendored in librnnoise/ and compiled
+# inline via Cgo by the parity_tests/ oracle packages (which live under
+# denoise/internal/parity_tests/ so they can import the Go port). No
+# system install or external build is needed for normal use; the
+# shipping Go port (denoise/internal/rnnoise) is pure Go, CGO_ENABLED=0.
+#
+# Task names below are bare; under monorepo mode
+# (experimental_monorepo_root + MISE_EXPERIMENTAL=1) mise auto-prefixes
+# them with this config's path, e.g. //libraries/rnnoise:parity.
+#
+# Build tags
+# ----------
+#   rnnoise_strict — bit-exact parity mode. Selects the FMA-free Go
+#     primitives (fp_strict.go: no `a + b*c` fusing into FMADDS),
+#     matching the C oracle built with -ffp-contract=off. This is the
+#     mode the parity tests assert against. The default library build
+#     (no tags) selects the FMA-fused primitives (fp_default.go).
+#
+# ARM-SAFE GENERIC-BRANCH ORACLE (critical)
+# -----------------------------------------
+# RNNoise's vec.h auto-selects a SIMD backend by compiler macros:
+#
+#     #if   defined(__AVX__) || defined(__SSE2__)          -> vec_avx.h
+#     #elif (defined(__ARM_NEON__)||defined(__ARM_NEON))
+#            && !defined(DISABLE_NEON)                      -> vec_neon.h
+#     #else                                                -> generic C
+#
+# vec_avx.h and vec_neon.h implement tanh/sigmoid/exp with hardware
+# approximate-reciprocal intrinsics (_mm_rcp_ps / vrecpe) whose results
+# are micro-architecture-defined and NOT reproducible in portable Go.
+# Dev + CI here is Apple Silicon, where __ARM_NEON is always defined, so
+# the default compile would pull in vec_neon.h. We force the GENERIC C
+# branch (which both the Go port and every platform can reproduce) by
+# defining DISABLE_NEON. On arm64 __AVX__/__SSE2__ are undefined, so the
+# first arm falls through and, with DISABLE_NEON, the NEON arm is
+# skipped too -> generic C. No source edits to vec.h are required.
+#
+# RTCD is inherently off: cpu_support.h only wires x86 RTCD behind
+# RNN_ENABLE_X86_RTCD (undefined here) -> rnn_select_arch()==0. The
+# float weight path (float_weights != NULL, DOT_PROD / USE_SU_BIAS
+# undefined) is the one exercised; the int8 arrays in rnnoise_data.c are
+# SIMD-only and unused by the generic float path.
+#
+# The scalar-oracle flags (-ffp-contract=off + no vectorize/unroll) match
+# the strict-mode Go. Go's cgo flag-security allowlist rejects them
+# in-source, so they are set via CGO_CFLAGS env with CGO_CFLAGS_ALLOW=".*".
+# Each task repeats the env block so it is inherited when invoked via
+# `mise run` from inside libraries/rnnoise/.
+
+[tasks."test"]
+description = "Run all RNNoise parity tests (strict build — bit-exact parity mode, generic vec.h branch)"
+env = { CGO_CFLAGS = "-O2 -ffp-contract=off -fno-vectorize -fno-slp-vectorize -fno-unroll-loops -DDISABLE_NEON", CGO_CFLAGS_ALLOW = ".*" }
+run = "go test -tags=rnnoise_strict -count=1 ../../denoise/internal/parity_tests/..."
+
+[tasks."parity"]
+description = "Run the RNNoise parity suite (Go port vs vendored C RNNoise 0.2 via cgo). Requires -tags=rnnoise_strict and the fetched model weights (`mise run //libraries/rnnoise:fetch` first — the network/e2e slices need rnnoise_data.c)."
+env = { CGO_CFLAGS = "-O2 -ffp-contract=off -fno-vectorize -fno-slp-vectorize -fno-unroll-loops -DDISABLE_NEON", CGO_CFLAGS_ALLOW = ".*" }
+run = "go test -tags=rnnoise_strict -count=1 ../../denoise/internal/parity_tests/..."
+
+# rnnoise_data.c (28 MB generated float-array weights) is NOT vendored in
+# git — it is fetched from upstream (SHA-pinned in VERSION). Needed only for
+# the cgo parity oracle + weight regen; the shipping pure-Go port embeds its
+# own weight blob and needs neither task.
+[tasks."fetch"]
+description = "Fetch the RNNoise model weights (rnnoise_data.c/.h) needed by the cgo parity oracle and weight regen."
+run = "bash ./download_model.sh"
+
+[tasks."weights"]
+description = "Regenerate the embedded RNNoise float-weight blob (denoise/internal/rnnoise/rnnoise_weights.bin) from the vendored rnnoise_data.c. Run `fetch` first."
+env = { CGO_CFLAGS_ALLOW = ".*" }
+run = "go run ../../denoise/internal/rnnoise/weightgen/main.go ../../denoise/internal/rnnoise/rnnoise_weights.bin"

@@ -1,0 +1,251 @@
+GTCRN — vendored model provenance and streaming-graph porting spec
+=================================================================
+
+Upstream:   https://github.com/Xiaobin-Rong/gtcrn
+Commit:     3862c44808dca492ea5a8a145d2dc2a1028d08c8 (master, fetched 2026-07-14)
+License:    MIT — code AND the DNS3-trained weights (see LICENSE in this
+            directory — upstream repo LICENSE, "Copyright (c) 2024 Rong Xiaobin").
+Model:      "GTCRN: ShuffleNetV2 + SFE + TRA + 2 DPGRNN", 16 kHz mono speech
+            enhancement, 23.67 K trainable params, 33.0 MMACs/frame, RTF ~0.07.
+
+Fetched artifacts (2026-07-14)
+------------------------------
+
+1. ONNX oracle model — VENDORED at
+   denoise/internal/parity_tests/gtcrn_ort/testdata/gtcrn.onnx:
+
+   URL:    .../gtcrn/master/stream/onnx_models/gtcrn.onnx
+   sha256: f648b02f2d7ff96ebcb0eec2219688a08ed12fe7e3d50f248605a90eba8cad17
+   size:   352084 bytes
+
+2. Simplified deployment model (inspected, NOT vendored):
+   URL:    .../stream/onnx_models/gtcrn_simple.onnx
+   sha256: b4718df6228e7bdf1a8a435cf98f838636eb2fd331acabf86ba87c5192ebcb87
+   Proven BYTE-IDENTICAL to artifact 1 in onnxruntime 1.27.0 over 40
+   streaming frames (max|Δ| = 0.0 on enh and all three caches;
+   tools/gtcrndump/crosscheck.py). onnxsim changed graph structure only,
+   not numerics — so we gate against the un-simplified graph, which keeps
+   unfused PyTorch-named conv/bn weights and ONNX-layout GRU W/R/B (a far
+   cleaner 1:1 embed + port target) with zero fidelity loss vs the
+   deployed artifact.
+
+3. DNS3 PyTorch checkpoint (inspected for the streaming-conversion detail,
+   NOT vendored — the ONNX initializers are the runtime weight source):
+   URL:    .../stream/onnx_models/model_trained_on_dns3.tar
+   sha256: 250fa2820ea9947704a62dda8e642ba773a067719c5e4294ad95aeab23f06442
+
+4. Embedded runtime weights (gtcrn_weights.safetensors in this directory,
+   go:embed'ed by weights.go) — EVERY float32 initializer of artifact 1,
+   verbatim names, extracted by tools/gtcrndump/extract_weights.py:
+   sha256: 5143525b5bd2625984cbcc17149e6e54221607c2f24d73c069e3b9868e482661
+   183 tensors, 48225 float32 params, 208714 bytes.
+   Byte-verified against the oracle's initializers by the gtcrn_ort parity
+   slice (the Silero precedent: runtime weights ARE the oracle's
+   initializers, so a divergence is impossible by construction). manifest.json
+   (also here) decodes the opaque onnx::Conv_*/GRU_*/MatMul_* names to their
+   logical roles. graph_dump.txt is the full node/initializer dump.
+
+STFT / ISTFT — OUTSIDE the model (the #1 silent-divergence risk)
+---------------------------------------------------------------
+
+The model consumes/produces a complex spectrum; framing is the caller's job
+and has NO ORT oracle. The canonical upstream convention (the exact calls
+that produced the repo's enh.wav reference) is:
+
+  analysis:  torch.stft(x, n_fft=512, hop_length=256, win_length=512,
+                        window=torch.hann_window(512).pow(0.5),
+                        return_complex=False)              -> (F=257, T, 2)
+  synthesis: torch.istft(Y, 512, 256, 512,
+                        window=torch.hann_window(512).pow(0.5))
+
+torch.stft defaults that MUST be replicated exactly:
+  center=True     -> reflect-pad n_fft//2 = 256 samples on BOTH ends before
+                     framing (so frame f covers padded[f*256 : f*256+512]).
+  pad_mode='reflect', normalized=False, onesided=True (257 = 512/2+1 bins).
+  window = SQRT of the PERIODIC Hann: torch.hann_window(512) is periodic by
+  default, w[n] = 0.5 - 0.5*cos(2*pi*n/512), n in 0..511; then **0.5.
+  NOTE this is NOT np.hanning(512) (symmetric, /511). The upstream ONNX demo
+  script mixing librosa np.hanning for istft is a demo inconsistency; the
+  authoritative reference path is torch.stft/torch.istft with the periodic
+  sqrt-Hann on both sides.
+  istft applies the same window and the standard NOLA overlap-add
+  normalization (divide by the windowed overlap-add of window^2). sqrt-Hann
+  at 50% hop is a COLA/NOLA pair so interior round-trip is near loss-less.
+
+The Go STFT/ISTFT is gated INDEPENDENTLY against torch-produced goldens
+(denoise/internal/gtcrn/testdata/stft_golden.json) — see stft.go / the STFT
+golden test. This is the one front-end the ORT oracle cannot cover.
+
+Streaming graph — gtcrn.onnx (opset ai.onnx:11, ir_version 6, pytorch 1.11)
+---------------------------------------------------------------------------
+
+1786 nodes (dynamic-shape ceremony from a torch dynamic export; ORT executes
+it fine). Per-call it is a SINGLE time frame with three recurrent caches.
+
+Inputs:
+  mix         f32 [1, 257, 1, 2]      one STFT frame, [.,.,.,0]=real [.,.,.,1]=imag
+  conv_cache  f32 [2, 1, 16, 16, 33]  [enc|dec] depth-conv temporal caches
+  tra_cache   f32 [2, 3, 1, 1, 16]    [enc|dec] x 3 blocks, TRA GRU hidden (16)
+  inter_cache f32 [2, 1, 33, 16]      dpgrnn1|dpgrnn2 inter-RNN hidden (BF=33, C=16)
+Outputs:
+  enh         f32 [1, 257, 1, 2]      enhanced frame
+  conv_cache_out, tra_cache_out, inter_cache_out  — updated caches
+
+Cache wiring (verified against stream/gtcrn_stream.py + the ScatterND ops):
+  conv_cache[0] = encoder depth caches; [1] = decoder. Along axis 3 (size 16):
+    [:2]   GTConvBlock dilation 1 -> (kT-1)*dT = 2*1 = 2
+    [2:6]  GTConvBlock dilation 2 -> 2*2 = 4
+    [6:16] GTConvBlock dilation 5 -> 2*5 = 10   (sum = 16)
+    A depth-conv step does inp = concat(cache, x) along T (T=1 frame),
+    conv over the (kT=3, dilation dT) temporal window, and writes back
+    out_cache = inp[:, :, 1:] (drop oldest T slice).
+  tra_cache[enc|dec][blk] = that block's TRA att_gru hidden (1,B,16).
+  inter_cache[0|1] = dpgrnn{1|2} inter-RNN hidden (1, BF=33, 16). The intra
+    RNN is bidirectional over the FREQUENCY axis and is NOT cached (a full
+    frame's 33 freq bins are always present); only the inter RNN is causal
+    over time and therefore cached.
+
+Effective dataflow (from stream/gtcrn_stream.py::StreamGTCRN.forward):
+  spec (1,257,1,2):
+   1. spec_real = spec[...,0].permute -> (1,T,257); spec_imag likewise.
+      spec_mag = sqrt(real^2 + imag^2 + 1e-12).
+      feat = stack([mag, real, imag], dim=1) -> (1, 3, T, 257).
+   2. ERB band merge (erb.bm): keep low erb_subband_1=65 bins; the high 192
+      bins (65..256) go through erb_fc (Linear 192->64, no bias); concat ->
+      (1, 3, T, 129).   [erb_fc weight = onnx::MatMul_3414, shape (192,64);
+      applied as x_high @ W.]
+   3. SFE (sub-band feature extraction): Unfold over (1,kernel=3) with
+      padding (0,1), stride 1 on the F axis, then reshape channels
+      C*3 -> (1, 9, T, 129). Patch order: for each output F position f,
+      the 3 taps are F positions f-1, f, f+1 (zero-padded at edges),
+      interleaved as [c0@f-1, c0@f, c0@f+1, c1@f-1, ...] per the
+      Unfold(kernel=(1,3)).reshape(C*3) convention — VERIFY against
+      blocks_golden (sfe output) before trusting.
+   4. Encoder (5 blocks), en_outs[0..4] captured for decoder skips:
+      blk0 ConvBlock : Conv2d 9->16, k(1,5), stride(1,2), pad(0,2), PReLU
+                       (Conv+BN fused into onnx::Conv_3380/3381 by the torch
+                        exporter; slope onnx::PRelu_3422). F 129->65.
+      blk1 ConvBlock : Conv2d 16->16, k(1,5), stride(1,2), pad(0,2), groups=2,
+                       PReLU (onnx::Conv_3383/3384, PRelu_3423). F 65->33.
+      blk2 GTConvBlock dilation(1,1); blk3 dilation(2,1); blk4 dilation(5,1)
+                       — all F stays 33, T stays 1. See GTConvBlock below.
+   5. dpgrnn1 then dpgrnn2 (DPGRNN, see below), each (1,16,T,33).
+   6. Decoder (5 blocks), skip-added to en_outs in reverse:
+      de0 GTConvBlock use_deconv, dilation(5,1); de1 dilation(2,1);
+      de2 dilation(1,1) — depth convs are REAL ConvTranspose2d nodes here
+      (see the ConvTranspose trap below); de3 ConvBlock deconv 16->16 groups=2
+      k(1,5) stride(1,2) pad(0,2) PReLU (F 33->65); de4 ConvBlock deconv
+      16->2 k(1,5) stride(1,2) pad(0,2) TANH is_last (F 65->129).
+      x = de_convs[i](x + en_outs[N-1-i]).
+   7. ERB band split (erb.bs): low 65 bins kept; high 64 erb bands ->
+      ierb_fc (Linear 64->192, no bias, onnx::MatMul_3932 shape (64,192)) ->
+      concat -> (1, 2, T, 257). This is the complex ratio mask m.
+   8. Mask apply (complex ratio mask), spec_ref permuted to (1,2,T,257):
+      s_real = spec_r*m_r - spec_i*m_i ;  s_imag = spec_i*m_r + spec_r*m_i.
+      enh = stack([s_real,s_imag]).permute -> (1,257,T,2).
+
+TRAP 1 — GRU gate order + linear_before_reset (all 14 GRUs)
+----------------------------------------------------------
+Every GRU node has attribute linear_before_reset=1 and standard ONNX gate
+layout z,r,h (NOT PyTorch r,z,n — the exporter already permuted the packed
+weights). The W/R/B initializers are in ONNX layout, so the Go port consumes
+them DIRECTLY with the ONNX GRU equation (opset-11 default activations
+Sigmoid, Tanh):
+    zt = sig( Wz.x + Rz.h + Wbz + Rbz )
+    rt = sig( Wr.x + Rr.h + Wbr + Rbr )
+    ht = tanh( Wh.x + Wbh + rt ∘ (Rh.h + Rbh) )      # linear_before_reset=1
+    Ht = (1 - zt) ∘ ht + zt ∘ h
+W is [dir, 3*hidden, in], R is [dir, 3*hidden, hidden], B is [dir, 6*hidden]
+(= [Wbz,Wbr,Wbh, Rbz,Rbr,Rbh]). Gate blocks in the 3*hidden axis are z,r,h.
+
+GRU roles (manifest.json, by node order):
+  TRA att_gru (unidir, hidden 16, in 8): GRU_153/343/533 (enc blk 2/3/4),
+    GRU_1111/1348/1585 (dec blk 0/1/2).  W (1,48,8) R (1,48,16) B (1,96).
+  DPGRNN intra (BIDIRECTIONAL over freq, hidden 4, in 8), grouped x2:
+    dpgrnn1 GRU_700/706, dpgrnn2 GRU_877/883.  W (2,12,8) R (2,12,4) B (2,24).
+  DPGRNN inter (unidir over time, hidden 8, in 8), grouped x2:
+    dpgrnn1 GRU_780/784, dpgrnn2 GRU_957/961.  W (1,24,8) R (1,24,8) B (1,48).
+  The grouped RNN (GRNN) splits input/hidden in half and runs rnn1 on the
+  first half, rnn2 on the second, then concatenates — so "hidden 8" GRNN =
+  two hidden-4 GRUs, "hidden 16" GRNN = two hidden-8 GRUs. Intra is
+  bidirectional (forward over f=0..32 and backward, outputs concatenated).
+
+TRAP — ConvTranspose semantics (decoder depth convs + de3/de4)
+--------------------------------------------------------------
+The vendored ONNX predates the repo's "Version 2" StreamConvTranspose2d
+refactor (Conv2d-with-flipped-weights, added 2025-03 for issue #37). The
+committed graph uses REAL ConvTranspose nodes — port against THESE, not the
+current Python source. Decoder depth convs (grouped 16, k(3,3)):
+  de0 ConvTranspose_1098: pads [10,1,10,1] dilation [5,1]  (T pad = (kT-1)*dT = 2*5=10)
+  de1 ConvTranspose_1335: pads [4,1,4,1]   dilation [2,1]  (2*2=4)
+  de2 ConvTranspose_1572: pads [2,1,2,1]   dilation [1,1]  (2*1=2)
+ONNX ConvTranspose output = sum over kernel of upsampled input, then CROP by
+`pads` (pads REMOVE output rows/cols, opposite of Conv). With stride 1 and
+these symmetric T pads, the causal temporal cache (conv_cache) supplies the
+(kT-1)*dT prior frames; F pad 1 each side. de3/de4 are ConvBlock deconvs
+k(1,5) stride(1,2) pad(0,2) groups {2,1} that UPSAMPLE F (33->65->129) and
+keep BN explicit + PReLU/Tanh. depth_conv weights are stored as
+decoder.de_convs.N.depth_conv.ConvTranspose2d.weight [16,1,3,3] =
+[in, out/groups, kT, kF]. Confirm exact crop/output-size vs blocks_golden.
+
+GTConvBlock (encoder blk2-4 use_deconv=False; decoder de0-2 use_deconv=True)
+---------------------------------------------------------------------------
+  x1,x2 = split(x) along C (16 -> 8+8; ShuffleNet channel split).
+  x1 -> SFE (unfold k3 over F, pad(0,1)) -> (B, 8*3=24, T, F).
+  h1 = PReLU(BN(point_conv1(x1)))     point_conv1: 1x1 conv 24->16.
+  h1 = depth_conv(h1, conv_cache_slice)  grouped(16) k(3,3) dilation(dT,1);
+       encoder: Conv2d with LEFT temporal pad (kT-1)*dT via the cache concat,
+       pad(0,1) on F; decoder: ConvTranspose (see trap above).
+  h1 = PReLU(BN(h1))
+  h1 = BN(point_conv2(h1))            point_conv2: 1x1 conv 16->8 (no act).
+  h1 = TRA(h1, tra_cache_slice)       Temporal Recurrent Attention (below).
+  x  = shuffle(h1, x2): stack -> transpose -> reshape to (B,16,T,F) — the
+       ShuffleNet channel-shuffle recombination.
+
+TRA (Temporal Recurrent Attention)
+----------------------------------
+  zt = mean(x^2, dim=F)          -> (B, C=8, T)
+  at, h = att_gru(zt.transpose, h_cache)   GRU in=8 hidden=16
+  at = sigmoid(att_fc(at))       att_fc: Linear 16->8 (onnx::MatMul_..[16,8] + bias[8])
+  return x * at[..., None]        broadcast gate over F.
+
+DPGRNN (Grouped Dual-Path RNN), input (B,16,T,33)
+-------------------------------------------------
+  Intra (over freq, bidirectional):
+    permute -> (B,T,F,C); reshape (B*T, F=33, C=16); grouped bidir GRU
+    (hidden//2=8 -> two hidden-4 bidir); intra_fc Linear 16->16 (+bias);
+    reshape (B,T,33,16); LayerNorm over LAST TWO dims (width=33, C=16),
+    eps=1e-8, gamma/beta shape [33,16]; residual add to the permuted input.
+  Inter (over time, unidirectional, cached):
+    permute -> (B,F,T,C); reshape (B*F=33, T, C); grouped unidir GRU
+    (hidden 16 -> two hidden-8) with inter_cache; inter_fc Linear 16->16;
+    reshape (B,F,T,16); permute (B,T,F,16); LayerNorm(33,16) eps=1e-8;
+    residual add. Then permute -> (B,16,T,33).
+  LayerNorm here normalizes over the FLATTENED (33*16) last two axes with a
+  single mean/var, then scales by per-(f,c) gamma/beta — VERIFY the axis on
+  blocks_golden (torch LayerNorm(normalized_shape=(33,16)) reduces both).
+
+PReLU slopes (per-channel scalar, shape [1,1,1]) — from graph_dump.txt:
+  enc blk0 0.03091  blk1 0.27262 ; GTConvBlock point_act/depth_act pairs and
+  decoder slopes are listed in the TRAP REPORT of graph_dump.txt. Each is a
+  single learned negative slope applied as max(0,x)+slope*min(0,x).
+
+Tolerance plan (mixed criterion, per the resolved design)
+---------------------------------------------------------
+Accept if  max(|Δ| ≤ 1e-4, rel ≤ 1e-3)  at three levels:
+  (a) per-frame output spectrum enh (1,257,1,2) vs the ORT oracle;
+  (b) the 3 caches, checkpointed every N frames;
+  (c) E2E PCM: SNR ≥ ~90 dB AND a drift-SLOPE check (bounded drift OK;
+      monotonically growing drift is a bug).
+Plus a bit-exact self-golden (Silero silero_golden pattern) at zero tolerance
+to catch refactors. Justification mirrors silero_ort/doc.go: both sides
+accumulate fp32 in different orders (ORT MLAS vectorized+FMA vs fixed
+sequential Go), so bit-equality vs ORT is unachievable; 1e-4/1e-3 clears the
+observed order-of-summation drift with margin.
+
+Oracle runtime pin
+------------------
+onnxruntime 1.27.0 (official release binaries; osx-arm64 locally, linux-x64
+in CI) driven through github.com/yalue/onnxruntime_go v1.31.0, single-threaded
+(intra_op=inter_op=1), graph optimizations disabled (ORT_DISABLE_ALL).
+Reference numbers in the committed goldens were produced by that pairing.
