@@ -20,6 +20,7 @@ Pure-Go audio + video toolkit. Module path: `github.com/daniel-sullivan/go-media
 - `loudness/` — EBU R128 / ITU-R BS.1770-4 loudness metering and normalisation (`Meter`, `Measure`, `Normalize`, `Normalizer`, `Limiter`, `Leveller`, `Monitor`); vendored libebur128 is a cgo parity oracle only, not a runtime backend.
 - `vad/` — streaming voice-activity detection (`Detector`, three engines: `EnergyDetector`, `WebRTCDetector`, `SileroDetector`) plus VAD-driven dynamics (`Gate`, `Ducker`); vendored libfvad is a bit-exact cgo parity oracle for the WebRTC engine, the vendored Silero ONNX model is an opt-in cgo parity oracle for the neural engine — neither is a runtime backend.
 - `aec/` — acoustic echo cancellation: a 1:1 pure-Go port of WebRTC's AEC3 (`Canceller`, a two-stream `FeedFarEnd`/`Process` API); the fetched (not vendored) C++ oracle is a parity check only, not a runtime backend.
+- `duplex/` — full-duplex voice-session engine (`Engine`): a paced 10 ms render path (jitter buffer, seam crossfade, ambient bed) coupled to a capture path (AEC, denoise chain, VAD speech events with pre-roll) on one audio goroutine.
 - `tools/` — example-only helpers that pull from multiple top-level packages (e.g. `audioio` bridges devices+timeline, `devicepicker` is a TUI) plus repo tooling (`llmsgen` regenerates `llms.txt`/`llms-full.txt`). Not for production import.
 
 ## Style rules

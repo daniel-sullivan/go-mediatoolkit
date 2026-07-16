@@ -824,6 +824,7 @@ Pure-Go audio + video toolkit. Module path: `github.com/daniel-sullivan/go-media
 - `loudness/` — EBU R128 / ITU-R BS.1770-4 loudness metering and normalisation (`Meter`, `Measure`, `Normalize`, `Normalizer`, `Limiter`, `Leveller`, `Monitor`); vendored libebur128 is a cgo parity oracle only, not a runtime backend.
 - `vad/` — streaming voice-activity detection (`Detector`, three engines: `EnergyDetector`, `WebRTCDetector`, `SileroDetector`) plus VAD-driven dynamics (`Gate`, `Ducker`); vendored libfvad is a bit-exact cgo parity oracle for the WebRTC engine, the vendored Silero ONNX model is an opt-in cgo parity oracle for the neural engine — neither is a runtime backend.
 - `aec/` — acoustic echo cancellation: a 1:1 pure-Go port of WebRTC's AEC3 (`Canceller`, a two-stream `FeedFarEnd`/`Process` API); the fetched (not vendored) C++ oracle is a parity check only, not a runtime backend.
+- `duplex/` — full-duplex voice-session engine (`Engine`): a paced 10 ms render path (jitter buffer, seam crossfade, ambient bed) coupled to a capture path (AEC, denoise chain, VAD speech events with pre-roll) on one audio goroutine.
 - `tools/` — example-only helpers that pull from multiple top-level packages (e.g. `audioio` bridges devices+timeline, `devicepicker` is a TUI) plus repo tooling (`llmsgen` regenerates `llms.txt`/`llms-full.txt`). Not for production import.
 
 ## Style rules
@@ -2925,6 +2926,101 @@ Default tests (`mise run //denoise:test`) need neither — they exercise the por
 ## Licensing
 
 RNNoise is BSD-3-Clause; GTCRN code and its DNS3 weights are MIT. Both sets of embedded weights and the vendored references are catalogued in the repository [`LICENSING.md`](../LICENSING.md), with per-model provenance (upstream commit + artifact SHA-256) in each engine's `VERSION` file.
+
+--------------------------------------------------------------------------------
+Source: duplex/README.md (https://raw.githubusercontent.com/daniel-sullivan/go-mediatoolkit/main/duplex/README.md)
+--------------------------------------------------------------------------------
+# duplex
+
+A full-duplex voice-session engine: one type pairing a **paced render (playback) path** with a **capture (microphone) path**, with the AEC far-end/near-end coupling handled internally. This is the core loop of a realtime voice agent — play synthesized speech while listening for the user — needing echo cancellation ([`aec`](../aec)), noise suppression ([`denoise`](../denoise) in the capture chain), VAD-driven speech events ([`vad`](../vad)), and pre-roll (`vad.PreRoll`).
+
+```go
+import "github.com/daniel-sullivan/go-mediatoolkit/duplex"
+```
+
+Like every pipeline package in this toolkit, the engine speaks interleaved **`float64`** samples in `[-1, 1]` at one sample rate and channel count. **Codecs are out of scope**: decode network audio before `Push`, encode after the output callback ([`codec/opus`](../codec/opus), [`codec/pcm`](../codec/pcm)).
+
+## Data flow
+
+One high-precision 10 ms ticker ([go-hpt](https://github.com/daniel-sullivan/go-hpt)) drives a single audio goroutine that owns **all** DSP state:
+
+```
+render:  FeedChunk ─▶ jitter buffer ─▶ seam crossfade ─▶ RenderChain ─▶ ambient mix ─▶ clamp ─┬─▶ output callback
+                                                                                              └─▶ AEC far-end
+capture: Push ─▶ bounded queue ─▶ 10ms re-frame ─▶ AEC echo removal ─▶ CaptureChain ─▶ Detector ─▶ Events / pre-roll
+```
+
+```go
+det, _ := vad.NewSileroDetector(vad.SileroConfig{SampleRate: 16000, Channels: 1})
+e, _ := duplex.New(duplex.Config{
+    SampleRate: 16000, Channels: 1,
+    Detector: det,
+    AEC:      new(duplex.AECConfig),         // nil = no echo cancellation
+    PreRoll:  300 * time.Millisecond,
+})
+e.SetOutput(func(frame []float64, seq int64) { /* encode + send; copy to keep */ })
+e.Start(ctx)
+
+e.FeedChunk(ttsChunk)     // stream synthesis as it arrives (any goroutine)
+e.MarkChunkBoundary()     // seam between independently-generated chunks
+e.Push(micFrame, tsMs)    // capture in, tagged (any goroutine)
+
+for ev := range e.Events() {
+    switch ev := ev.(type) {
+    case duplex.SpeechStart: // barge-in: e.ClearPending()
+    case duplex.AudioFrame:  // feed the ASR: ev.Frame, ev.Tag
+    case duplex.SpeechStop:  // finalize the ASR turn
+    }
+}
+```
+
+## Render side
+
+All render methods are safe from any goroutine.
+
+- **`FeedChunk(pcm)`** appends streamed voice audio to a jitter buffer that slices it into fixed 10 ms frames; a trailing partial frame waits for the next chunk to complete it. The buffer grows without bound (the producer is the session's own synthesis stream, not an untrusted peer); `ClearPending` is the pressure valve.
+- **`MarkChunkBoundary()`** marks the seam between independently-generated chunks (two TTS generations meet with a phase discontinuity — an audible click). The first frame of the next chunk fed is blended **equal-power** (`cos`/`sin`, midpoint-sampled) against the tail of the frame played before it, over `Config.Crossfade` (default 5 ms, capped at one frame). The seam is positional: it lands on the actual chunk head no matter how far behind the paced reader runs. A pending partial frame is flushed zero-padded first — an independent generation must not splice mid-frame onto the previous one's remainder.
+- **`ClearPending()`** drops all queued-but-unplayed voice audio immediately — the barge-in primitive. Ambient keeps playing.
+- **Ambient bed** (`Config.Ambient`): a fixed loop mixed under the voice at a linear gain, sample-precise across its wrap, so the far side never hears dead air. The mixed frame is hard-clamped to `[-1, 1]`.
+- **`RenderChain`** (`[]mutations.Processor`): gain, `mutations.Biquad` filters, a `loudness.Limiter` — applied to the voice after the crossfade, before the ambient mix.
+- **Paced emit**: exactly one frame per 10 ms tick — silence on underrun, so the output cadence never gaps — through the output callback `func(frame []float64, seq int64)` (`SetOutput`, nil-safe, live-swappable). `seq` increments by 1 per tick; the frame slice is reused, copy to keep.
+
+## Capture side
+
+- **`Push(frame, tag)`** — thread-safe bounded enqueue (default 2.5 s) of a capture frame of any whole-channel length, paired with an opaque `int64` tag (typically a capture timestamp). The engine re-frames to 10 ms internally, assigning each internal frame the tag of the push its first sample came from. On overflow the **newest** frame is shed (`ErrCaptureOverflow`, counted in `Metrics`): the buffered frames are older and already owed to the ASR in order — dropping them would tear a hole mid-stream, while the rejected push surfaces to the caller.
+- Each tick drains a **bounded batch** (absorbing network bursts a few times faster than real time without stalling the render side), running per frame: AEC echo removal → `CaptureChain` (e.g. a `denoise.GTCRN`) → `Detector` (pass-through observer).
+
+### Speech events
+
+Events arrive on one **FIFO channel** (`Events()`). Per utterance:
+
+1. **`SpeechStart`** — fired once (redundant detector transitions are absorbed). `Timestamp` is back-dated to the oldest pre-roll tag (or the live frame's tag if pre-roll is empty/disabled) minus `LeadIn`, clamped ≥ 0; `OnsetFrame` is the detector's own back-timestamped onset position.
+2. **Lead-in silence** — `LeadIn` (default 30 ms) of synthetic zero frames with back-dated tags counting up toward the real start, giving a downstream ASR a beat of empty audio to spin up on.
+3. **Pre-roll replay** — the post-DSP out-of-speech frames banked while the detector was still confirming the onset (`Config.PreRoll`, via `vad.PreRoll`), oldest first with their original tags: the first syllables reach the ASR.
+4. **Live frames** — post-DSP `AudioFrame`s while speech lasts.
+5. **`SpeechStop`** — on the detector's inactive transition; the engine resumes banking pre-roll for the next utterance.
+
+The audio goroutine **blocks** when the events channel is full rather than dropping — a dropped frame would corrupt the downstream ASR transcript, which is strictly worse than a late tick. Size `Config.EventBuffer` (default 256) for the consumer's worst-case lag.
+
+## The AEC coupling
+
+`aec.Canceller` requires `FeedFarEnd` and `Process` to be serialized onto one goroutine, paced roughly together — a contract that is easy to misuse when playback and capture live in different parts of a program. The engine internalises it: the same tick that emits a render frame feeds it to the canceller as far-end reference *before* the output callback fires, and capture frames are echo-cancelled on that same goroutine. `SetAudioBufferDelay` passes an external delay estimate through; `Metrics()` exposes ERL/ERLE/delay/clockdrift. Note the canceller's fixed 10 ms processing latency: a capture frame's post-DSP content lags its tag by one frame.
+
+## Detector ownership and tuning
+
+The engine is the `Detector`'s **exclusive feeder** (the vad package's one-feeder-per-stream contract). Detector tuning setters are lock-free atomics, safe from any goroutine and effective at the next decision window, so adjusting them live mid-stream — even mid-utterance — is supported. Two are passed through on the engine for probability-scored detectors: `SetVADThreshold` (e.g. raising the bar while known far-end audio plays) and `SetVADMinSilence` (the endpointing wait — lengthen it while a long-form answer is expected, shorten it for rapid turn-taking); both return `ErrTuningUnsupported` for detectors without the corresponding setter. Every other knob is reachable on the concrete detector you constructed (also via `Detector()`). For VADIterator-style immediate onsets pair the pre-roll with `MinSpeech: time.Nanosecond, SpeechPad: time.Nanosecond` (see the [vad README](../vad/README.md)).
+
+## Lifecycle and metrics
+
+`New` validates everything up front (constructors return errors, never panic). `Start(ctx)` launches the audio goroutine; `Stop()` (or ctx cancellation) halts it, cancels the detector subscription, and closes the events channel — already-queued events remain readable. An engine is single-use. `Metrics()` is a lock-free snapshot from any goroutine: AEC metrics, capture queue depth, dropped capture frames, rendered frame count.
+
+## Verification
+
+`go test ./duplex/` covers tick pacing, underrun silence, chunk slicing/carry, seam crossfading (with a hard-cut control), ambient looping/clamping, barge-in, capture re-framing and tag assignment, burst absorption with bounded per-tick work, overflow accounting, the full FIFO event sequence with back-dated tags, in-speech guards, and an end-to-end AEC loopback: 8 s of far-end pink noise with a 60 ms/−6 dB synthetic echo path must converge to ≥ 15 dB echo reduction with **no** SpeechStart, then a genuine near-end tone superimposed mid-playout must fire one. `-race` clean.
+
+`BenchmarkEngineTick_AECSileroPreRoll` measures the fully-loaded 10 ms tick (AEC + Silero + pre-roll): ~341 µs on an Apple M3 Pro core — headroom for ~29 concurrent sessions per core.
+
+See [`examples/session`](examples/session/main.go) for a headless end-to-end run.
 
 --------------------------------------------------------------------------------
 Source: generators/README.md (https://raw.githubusercontent.com/daniel-sullivan/go-mediatoolkit/main/generators/README.md)
@@ -9976,6 +10072,421 @@ func (s *System) Snapshot(cb func(Event)) ([]Device, *events.Subscription[Event]
     Calling System methods from within cb on the same goroutine will deadlock.
 
     Call Cancel on the returned Subscription to stop receiving events.
+
+--------------------------------------------------------------------------------
+Source: go doc -all github.com/daniel-sullivan/go-mediatoolkit/duplex
+--------------------------------------------------------------------------------
+package duplex // import "github.com/daniel-sullivan/go-mediatoolkit/duplex"
+
+Package duplex pairs a paced render (playback) path with a capture (microphone)
+path into one full-duplex voice-session engine: the core loop of a realtime
+voice agent that plays synthesized speech while listening for the user, needing
+echo cancellation, noise suppression, VAD-driven speech events, and pre-roll.
+
+# Data flow
+
+One high-precision 10 ms ticker (github.com/daniel-sullivan/go-hpt) drives a
+single audio goroutine that owns ALL DSP state. Each tick:
+
+    render:  jitter read (silence on underrun) → seam crossfade →
+             RenderChain → ambient mix → clamp → AEC far-end feed →
+             output callback
+    capture: bounded drain of pushed frames, re-framed to 10 ms →
+             AEC echo removal → CaptureChain → Detector →
+             speech-event state machine → Events channel / pre-roll
+
+The render side is fed from any goroutine: FeedChunk appends streamed voice
+audio (e.g. synthesized speech) to a jitter buffer, MarkChunkBoundary marks the
+seam between independently-generated chunks for an equal-power crossfade that
+removes discontinuity clicks, and ClearPending drops all queued-but-unplayed
+audio for a barge-in. An optional looping ambient bed is mixed under the voice.
+
+The capture side is fed from any goroutine: Push enqueues capture frames
+(arbitrary lengths; the engine re-frames to 10 ms) paired with an opaque int64
+tag — typically a capture timestamp — onto a bounded queue that sheds the newest
+frame on overflow.
+
+# Why the engine owns the AEC coupling
+
+aec.Canceller requires FeedFarEnd and Process to be serialized onto one
+goroutine, paced roughly together. The engine internalises that contract:
+the same tick that emits a render frame feeds it to the AEC as far-end reference
+before the output callback fires, and capture frames are echo-cancelled on that
+same goroutine — the serialization cannot be misused from outside.
+
+# Speech events
+
+Capture-side events arrive on one FIFO channel (Events). For each utterance:
+SpeechStart (its Timestamp back-dated to the oldest pre-roll frame minus the
+lead-in, clamped at 0), Config.LeadIn worth of synthetic silence frames (giving
+a downstream ASR a beat of empty audio to spin up on), the pre-roll replay (the
+utterance onset the detector was still confirming), live post-DSP frames while
+speech lasts, then SpeechStop. Redundant detector transitions are absorbed:
+exactly one SpeechStart and one SpeechStop per utterance.
+
+The engine is the Detector's exclusive feeder (see the vad package doc's "One
+feeder per stream") — do not Process the same detector elsewhere. Detector
+tuning setters are lock-free atomics, safe to call from any goroutine on the
+concrete detector the caller constructed (reachable via Detector()).
+
+# Scope
+
+The engine speaks interleaved float64 samples in [-1, 1] at one sample rate
+and channel count, like every pipeline package in this toolkit. Codecs are out
+of scope: callers decode network audio before Push and encode after the output
+callback (codec/opus, codec/pcm).
+
+VARIABLES
+
+var (
+	// ErrBadSampleRate is returned when Config.SampleRate is not a
+	// positive multiple of 100 Hz (the engine frames all audio into
+	// whole 10 ms frames), or — with AEC enabled — not one of the
+	// rates aec.NewCanceller accepts (16000, 32000, 48000).
+	ErrBadSampleRate = errors.New("duplex: invalid sample rate")
+
+	// ErrBadChannels is returned when Config.Channels is not in 1..64.
+	ErrBadChannels = errors.New("duplex: channel count must be in 1..64")
+
+	// ErrNilDetector is returned when Config.Detector is nil — the
+	// capture path is meaningless without one.
+	ErrNilDetector = errors.New("duplex: detector must not be nil")
+
+	// ErrDetectorMismatch is returned when Config.Detector was
+	// constructed for a different sample rate or channel count than
+	// the engine's.
+	ErrDetectorMismatch = errors.New("duplex: detector stream format must match the engine")
+
+	// ErrNilProcessor is returned when RenderChain or CaptureChain
+	// contains a nil entry.
+	ErrNilProcessor = errors.New("duplex: processor chains must not contain nil")
+
+	// ErrBadConfig is returned for configuration problems not covered
+	// by a more specific sentinel: negative durations, a negative
+	// EventBuffer, or an invalid Ambient (empty, misaligned, shorter
+	// than one frame, or negative gain).
+	ErrBadConfig = errors.New("duplex: invalid configuration")
+
+	// ErrBadFrame is returned by Push when the frame length is not a
+	// whole multiple of Channels.
+	ErrBadFrame = errors.New("duplex: frame length must be a whole multiple of Channels")
+
+	// ErrCaptureOverflow is returned by Push when the bounded capture
+	// queue is full: the frame is dropped (drop-newest) and counted
+	// in Metrics().CaptureFramesDropped. See Push's doc comment for
+	// why overload sheds the newest frame instead of blocking.
+	ErrCaptureOverflow = errors.New("duplex: capture queue full, frame dropped")
+
+	// ErrEngineStarted is returned by Start when the engine is
+	// already running.
+	ErrEngineStarted = errors.New("duplex: engine already started")
+
+	// ErrEngineStopped is returned by Start after Stop: an Engine is
+	// single-use, construct a new one for a fresh session.
+	ErrEngineStopped = errors.New("duplex: engine stopped")
+
+	// ErrTuningUnsupported is returned by the SetVAD* passthroughs
+	// when the configured detector does not expose the corresponding
+	// setter. Tune such a detector directly through Detector().
+	ErrTuningUnsupported = errors.New("duplex: detector does not support this tuning setter")
+)
+    Sentinel errors returned by the duplex package. All messages are prefixed
+    "duplex: " per repo convention. Compare with errors.Is or direct equality.
+
+
+TYPES
+
+type AECConfig struct {
+	// Tuning selects AEC3's internal tuning parameters; nil selects
+	// aec/config.DefaultConfig(). See aec.CancellerConfig.Tuning.
+	Tuning *aecconfig.Config
+}
+    AECConfig enables acoustic echo cancellation. The engine builds the
+    aec.Canceller itself (rate and channels come from the enclosing Config) and
+    owns its two-stream serialization contract entirely.
+
+type AmbientConfig struct {
+	// PCM is the loop asset: interleaved float64 in [-1, 1] at the
+	// engine's sample rate and channel count, at least one frame
+	// (10 ms) long and a whole multiple of Channels. The loop wraps
+	// sample-precise, mid-frame if need be. Cloned at construction.
+	PCM []float64
+
+	// Gain is the linear gain applied to the bed before mixing
+	// (mutations.Decibels converts from dB). Zero selects 1.0
+	// (unity); must not be negative.
+	Gain float64
+}
+    AmbientConfig loops a fixed audio bed under the rendered voice — room tone,
+    hold music — so the far side never hears dead air.
+
+type AudioFrame struct {
+	// Frame is interleaved float64 in [-1, 1], one engine frame long.
+	Frame []float64
+
+	// Tag is the frame's position in tag units: the caller-supplied
+	// tag for live and pre-roll frames, or a back-dated synthetic tag
+	// for lead-in silence (see Config.LeadIn).
+	Tag int64
+}
+    AudioFrame carries one 10 ms frame of an in-progress utterance: lead-in
+    silence, replayed pre-roll, or live capture — all post-DSP (echo-cancelled
+    and capture-chain processed). Frame is a copy owned by the receiver.
+
+type Config struct {
+	// SampleRate is the session sample rate in Hz. Must be a positive
+	// multiple of 100 (whole 10 ms frames); with AEC enabled it must
+	// be one of 16000, 32000, or 48000 (the rates AEC3 supports).
+	SampleRate int
+
+	// Channels is the interleaved channel count for BOTH paths, in
+	// 1..64.
+	Channels int
+
+	// Detector is the voice-activity engine driving speech events
+	// (vad.NewSileroDetector, vad.NewEnergyDetector, ...). Required;
+	// must be constructed for this SampleRate/Channels. The engine
+	// becomes its exclusive feeder.
+	Detector vad.Detector
+
+	// AEC enables acoustic echo cancellation; nil disables it. When
+	// enabled, every rendered frame feeds the canceller as far-end
+	// reference and every capture frame is echo-cancelled before the
+	// capture chain runs. Note the canceller's fixed 10 ms processing
+	// latency (aec.Canceller.Latency): a capture frame's post-DSP
+	// content lags its tag by one frame.
+	AEC *AECConfig
+
+	// PreRoll is the capture pre-roll window: how much out-of-speech
+	// post-DSP audio to retain for replay when speech starts (see
+	// vad.PreRoll). Zero disables pre-roll; must not be negative.
+	PreRoll time.Duration
+
+	// LeadIn is how much synthetic silence to emit (as AudioFrame
+	// events with back-dated tags) between SpeechStart and the
+	// pre-roll replay, giving a downstream ASR a beat of empty audio
+	// to spin up on. Floored to whole frames. Zero selects 30 ms;
+	// pass time.Nanosecond (or anything under one frame) for none.
+	// Must not be negative.
+	LeadIn time.Duration
+
+	// TagUnit is the duration one capture-tag increment represents,
+	// used to back-date the synthetic lead-in tags and the
+	// SpeechStart timestamp (e.g. time.Millisecond for
+	// milliseconds-since-session-start tags). Zero selects 1 ms.
+	// Must not be negative; a TagUnit longer than one frame
+	// degenerates to no back-dating.
+	TagUnit time.Duration
+
+	// RenderChain is an ordered effects chain applied to every voice
+	// frame after the seam crossfade and before the ambient mix
+	// (gain, biquad filters, a limiter...). Each processor must be
+	// constructed for this SampleRate/Channels and not shared with
+	// any other stream; the engine never calls Reset on it.
+	RenderChain []mutations.Processor
+
+	// CaptureChain is the capture-side counterpart, applied after
+	// echo cancellation and before the detector (e.g. a
+	// denoise.Engine). Same construction and ownership rules as
+	// RenderChain.
+	CaptureChain []mutations.Processor
+
+	// Ambient loops a bed under the voice; nil disables it.
+	Ambient *AmbientConfig
+
+	// Crossfade is the equal-power fade window applied across marked
+	// chunk seams (MarkChunkBoundary), capped at one frame (10 ms).
+	// Zero selects 5 ms; pass time.Nanosecond for a hard cut. Must
+	// not be negative.
+	Crossfade time.Duration
+
+	// CaptureBuffer bounds the capture queue: pushes beyond this much
+	// buffered audio are dropped (ErrCaptureOverflow). Zero selects
+	// 2.5 s; floored to one frame. Must not be negative.
+	CaptureBuffer time.Duration
+
+	// EventBuffer is the Events channel capacity. The audio goroutine
+	// BLOCKS when it is full rather than dropping (a dropped frame
+	// would corrupt a downstream ASR transcript), so size it for the
+	// consumer's worst-case lag. Zero selects 256; must not be
+	// negative.
+	EventBuffer int
+
+	// Output, if non-nil, is installed as the initial output callback
+	// (see SetOutput).
+	Output func(frame []float64, seq int64)
+}
+    Config configures an Engine. SampleRate, Channels, and Detector are
+    required; every other field has a working default.
+
+type Engine struct {
+	// Has unexported fields.
+}
+    Engine is a running full-duplex voice session. Construct with New, drive
+    with Start/Stop; every exported method is safe from any goroutine unless
+    its doc says otherwise. An Engine is single-use: after Stop it cannot be
+    restarted.
+
+func New(cfg Config) (*Engine, error)
+    New constructs an Engine for cfg. It validates every field and returns
+    a sentinel error (or, for AEC tuning problems, the aec package's error)
+    without starting anything; call Start to begin ticking.
+
+func (e *Engine) ClearPending()
+    ClearPending immediately drops all queued-but-unplayed voice audio,
+    including any partial frame and pending seam — the barge-in primitive.
+    Audio already handed to the output callback is gone; ambient (if any) keeps
+    playing. Safe from any goroutine.
+
+func (e *Engine) Detector() vad.Detector
+    Detector returns the detector the engine was configured with, for live
+    tuning: detector setters (e.g. SileroDetector.SetThreshold) are lock-free
+    atomics, safe from any goroutine while the engine runs. Do NOT call Process
+    or Reset on it — the engine is its exclusive feeder.
+
+func (e *Engine) Events() <-chan Event
+    Events returns the FIFO speech-event channel. It is closed by Stop (buffered
+    events remain readable). See the package doc for the per-utterance sequence
+    and Config.EventBuffer for the block-don't-drop delivery contract.
+
+func (e *Engine) FeedChunk(pcm []float64) error
+    FeedChunk appends a chunk of voice audio (interleaved, any length — e.g.
+    one streamed synthesis packet) to the render jitter buffer, where it is
+    sliced into 10 ms frames; a trailing partial frame waits for the next chunk
+    to complete it. Safe from any goroutine. Returns ErrBadFrame if len(pcm) is
+    not a whole multiple of Channels.
+
+func (e *Engine) MarkChunkBoundary()
+    MarkChunkBoundary marks a seam between independently-generated chunks:
+    a pending partial frame is flushed (zero-padded), and the first frame
+    of the NEXT chunk fed — however far behind the paced reader is running
+    — is blended equal-power against the tail of the frame played before it,
+    removing the discontinuity click two unrelated generations meet with.
+    Safe from any goroutine.
+
+func (e *Engine) Metrics() Metrics
+    Metrics returns the current snapshot.
+
+func (e *Engine) Push(frame []float64, tag int64) error
+    Push enqueues one capture frame (interleaved, any length that is a whole
+    multiple of Channels) tagged tag onto the bounded capture queue; the engine
+    re-frames internally to 10 ms, assigning each internal frame the tag of the
+    push its first sample came from (push exact 10 ms frames for exact tags).
+    frame is copied. Safe from any goroutine.
+
+    Returns ErrBadFrame for a misaligned length, or ErrCaptureOverflow when
+    the queue is full — the frame is then dropped (drop-newest) and counted in
+    Metrics().CaptureFramesDropped rather than blocking a network receive loop.
+
+func (e *Engine) SetAudioBufferDelay(delay time.Duration)
+    SetAudioBufferDelay forwards an external render→capture delay estimate to
+    the echo canceller (see aec.Canceller. SetAudioBufferDelay), helping its
+    delay estimator converge faster. A no-op when AEC is disabled. Safe from any
+    goroutine.
+
+func (e *Engine) SetOutput(fn func(frame []float64, seq int64))
+    SetOutput installs (or, with nil, removes) the output callback the audio
+    goroutine invokes with each paced frame and its sequence number. The frame
+    slice is reused by the next tick — the callback must copy anything it keeps,
+    and must return quickly (it runs on the audio goroutine; encode-and-send
+    is fine, blocking I/O is not). seq increments by exactly 1 per tick from 1.
+    Safe from any goroutine.
+
+func (e *Engine) SetVADMinSilence(d time.Duration) error
+    SetVADMinSilence forwards d to the detector's SetMinSilence — how long the
+    probability must sit below the release threshold before the utterance closes
+    (the endpointing wait). Like SetVADThreshold it is a lock-free atomic on the
+    detector: safe from any goroutine, effective at the next decision window,
+    and explicitly supported mid-utterance — e.g. lengthening the wait while a
+    long-form answer is expected, shortening it for rapid turn-taking. Returns
+    ErrTuningUnsupported when the configured detector has no such setter;
+    other errors are the detector's own validation.
+
+func (e *Engine) SetVADThreshold(v float64) error
+    SetVADThreshold forwards v to the detector's SetThreshold — the
+    speech-probability knob on probability-scored engines (vad.SileroDetector).
+    The setter is a lock-free atomic on the detector, so it is safe from any
+    goroutine while the engine runs and takes effect at the detector's next
+    decision window: adjusting it live mid-stream — even mid-utterance — is
+    supported (e.g. raising the bar while known far-end audio plays). Returns
+    ErrTuningUnsupported when the configured detector has no such setter (e.g.
+    the Energy engine, whose thresholds are a dB pair — tune it directly via
+    Detector()); other errors are the detector's own validation.
+
+func (e *Engine) Start(ctx context.Context) error
+    Start launches the paced audio goroutine. The engine stops when ctx is
+    cancelled or Stop is called, whichever comes first. Returns ErrEngineStarted
+    if already running, ErrEngineStopped after Stop.
+
+func (e *Engine) Stop()
+    Stop halts the audio goroutine, cancels the detector subscription,
+    and closes the Events channel (already-queued events remain readable;
+    an event the audio goroutine was still blocked on is discarded). Idempotent,
+    safe from any goroutine, returns after the audio goroutine has exited.
+
+type Event interface {
+	// Has unexported methods.
+}
+    Event is the closed set of capture-side events an Engine delivers on
+    its Events channel: SpeechStart, AudioFrame, and SpeechStop. Delivery is
+    strictly FIFO in the order the audio goroutine produced them — for one
+    utterance: SpeechStart, the lead-in silence frames, the pre-roll replay,
+    the live frames, SpeechStop.
+
+type Metrics struct {
+	// AECEnabled reports whether echo cancellation is configured;
+	// when false, AEC is the zero value.
+	AECEnabled bool
+
+	// AEC is the canceller's snapshot: ERL/ERLE, estimated delay,
+	// clockdrift, dropped render frames.
+	AEC aec.Metrics
+
+	// CaptureQueued is how much pushed capture audio is waiting to be
+	// drained by the audio goroutine.
+	CaptureQueued time.Duration
+
+	// CaptureFramesDropped counts Push calls rejected with
+	// ErrCaptureOverflow.
+	CaptureFramesDropped uint64
+
+	// RenderedFrames counts paced output frames emitted since Start
+	// (the current output sequence number).
+	RenderedFrames int64
+}
+    Metrics is a snapshot of the engine's counters, safe to read from any
+    goroutine. Each field is individually consistent, but the snapshot is not
+    transactional: the fields are sampled from independently-synchronized
+    sources, so under concurrent activity two fields can reflect instants a few
+    microseconds apart.
+
+type SpeechStart struct {
+	// Timestamp is the utterance's start position in tag units:
+	// the tag of the oldest replayed pre-roll frame (or of the
+	// triggering live frame when the pre-roll is empty or disabled),
+	// backdated by Config.LeadIn and clamped to be never negative —
+	// it points at the first AudioFrame of the utterance, lead-in
+	// silence included.
+	Timestamp int64
+
+	// OnsetFrame is the detector's back-timestamped stream position
+	// of the speech onset (vad.SpeechEvent.Frame): capture frames
+	// fed to the detector since construction, at the engine sample
+	// rate. It is the detector's own estimate of where speech began,
+	// independent of the tag timeline.
+	OnsetFrame int64
+}
+    SpeechStart announces the beginning of an utterance. It is fired once per
+    utterance (redundant detector starts while speech is already in progress are
+    absorbed) and is followed by the utterance's audio as AudioFrame events.
+
+type SpeechStop struct {
+	// Tag is the tag of the capture frame whose processing confirmed
+	// the end of speech.
+	Tag int64
+}
+    SpeechStop announces the end of the utterance in progress. No further
+    AudioFrame events follow until the next SpeechStart.
 
 --------------------------------------------------------------------------------
 Source: go doc -all github.com/daniel-sullivan/go-mediatoolkit/events
