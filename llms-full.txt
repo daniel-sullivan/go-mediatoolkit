@@ -6808,6 +6808,38 @@ consumers; one goroutine writes, one reads.
 
 TYPES
 
+type Queue[T any] struct {
+	// Has unexported fields.
+}
+    Queue is a generic head-indexed FIFO: Push appends at the tail, Pop removes
+    at the head, and the dead prefix Pop leaves behind is compacted away once it
+    dominates the backing array, so a long-lived queue's memory tracks its live
+    contents rather than its history. It is the frame-queue building block the
+    toolkit's streaming engines share (paired with Slab when the payloads carry
+    sample buffers worth recycling).
+
+    Unlike Ring, a Queue is not safe for concurrent use — drive it from one
+    goroutine or synchronise externally.
+
+func (q *Queue[T]) Len() int
+    Len reports the queued item count.
+
+func (q *Queue[T]) Peek() *T
+    Peek returns a pointer to the head item, or nil if the queue is empty.
+    The pointer is valid until the next Push, Pop, or Reset.
+
+func (q *Queue[T]) Pop() (T, bool)
+    Pop removes and returns the head item, or a zero value and false if the
+    queue is empty. The vacated slot is zeroed so popped payloads are not
+    retained by the backing array.
+
+func (q *Queue[T]) Push(v T)
+    Push appends v at the tail.
+
+func (q *Queue[T]) Reset()
+    Reset discards every queued item (zeroing the slots), keeping the backing
+    array for reuse.
+
 type Ring struct {
 	// Has unexported fields.
 }
@@ -6846,6 +6878,23 @@ func (r *Ring) Write(src []float64) int
     actually written. Samples that do not fit are discarded — callers that care
     should compare the return value against len(src). Safe to call concurrently
     with Read but not with another Write.
+
+type Slab struct {
+	// Has unexported fields.
+}
+    Slab recycles float64 sample buffers across a queue's push/pop cycles so
+    a steady stream of copied frames stops allocating once the working set has
+    warmed up. Like Queue it is single-goroutine — synchronise externally when
+    producer and consumer recycle through the same Slab.
+
+func (s *Slab) Put(buf []float64)
+    Put recycles buf for a later Take. The caller must not use buf again after
+    Put.
+
+func (s *Slab) Take() []float64
+    Take returns an empty (zero-length) buffer with whatever capacity a recycled
+    buffer brought, or nil when none is available — either way the result is
+    ready to append into.
 
 --------------------------------------------------------------------------------
 Source: go doc -all github.com/daniel-sullivan/go-mediatoolkit/codec
