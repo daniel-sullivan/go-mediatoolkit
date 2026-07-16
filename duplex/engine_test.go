@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/daniel-sullivan/go-mediatoolkit/mutations"
+	"github.com/daniel-sullivan/go-mediatoolkit/vad"
 )
 
 // newTestEngine constructs an engine at 16 kHz mono with a fake
@@ -57,10 +58,18 @@ func TestNew_Validation(t *testing.T) {
 		{"nil render processor", func(c *Config) { c.RenderChain = []mutations.Processor{nil} }, ErrNilProcessor},
 		{"nil capture processor", func(c *Config) { c.CaptureChain = []mutations.Processor{nil} }, ErrNilProcessor},
 		{"negative preroll", func(c *Config) { c.PreRoll = -time.Second }, ErrBadConfig},
+		{"oversized preroll", func(c *Config) { c.PreRoll = 2 * time.Minute }, ErrBadConfig},
 		{"negative leadin", func(c *Config) { c.LeadIn = -time.Second }, ErrBadConfig},
+		{"oversized leadin", func(c *Config) { c.LeadIn = 2 * time.Second }, ErrBadConfig},
 		{"negative tag unit", func(c *Config) { c.TagUnit = -time.Second }, ErrBadConfig},
+		{"tag unit above one frame", func(c *Config) { c.TagUnit = 20 * time.Millisecond }, ErrBadConfig},
+		{"tag unit not dividing the frame", func(c *Config) { c.TagUnit = 3 * time.Millisecond }, ErrBadConfig},
 		{"negative crossfade", func(c *Config) { c.Crossfade = -time.Second }, ErrBadConfig},
+		{"oversized crossfade", func(c *Config) { c.Crossfade = 20 * time.Millisecond }, ErrBadConfig},
 		{"negative capture buffer", func(c *Config) { c.CaptureBuffer = -time.Second }, ErrBadConfig},
+		{"oversized capture buffer", func(c *Config) { c.CaptureBuffer = 2 * time.Minute }, ErrBadConfig},
+		{"negative stall timeout", func(c *Config) { c.StallTimeout = -time.Second }, ErrBadConfig},
+		{"oversized stall timeout", func(c *Config) { c.StallTimeout = 2 * time.Minute }, ErrBadConfig},
 		{"negative event buffer", func(c *Config) { c.EventBuffer = -1 }, ErrBadConfig},
 		{"empty ambient", func(c *Config) { c.Ambient = new(AmbientConfig) }, ErrBadConfig},
 		{"short ambient", func(c *Config) { c.Ambient = &AmbientConfig{PCM: make([]float64, 80)} }, ErrBadConfig},
@@ -317,6 +326,60 @@ func TestEngine_StopLifecycle(t *testing.T) {
 			t.Fatal("events channel not closed after context cancellation")
 		}
 	}
+}
+
+func TestEngine_StallTimeoutFailsSession(t *testing.T) {
+	// A consumer that never drains: the audio goroutine's blocked
+	// send must fail the session after StallTimeout instead of
+	// freezing forever.
+	e, det := newTestEngine(t, func(c *Config) {
+		c.PreRoll = time.Duration(0)
+		c.LeadIn = time.Nanosecond
+		c.EventBuffer = 1
+		c.StallTimeout = 20 * time.Millisecond
+	})
+
+	det.trigger(vad.SpeechStart)
+	require.NoError(t, e.Push(constFrame(160, 0.5), 0)) // fills the 1-slot buffer
+	require.NoError(t, e.Push(constFrame(160, 0.5), 10))
+	start := time.Now()
+	e.tick() // second send blocks, then stalls out
+
+	assert.GreaterOrEqual(t, time.Since(start), 20*time.Millisecond)
+	assert.ErrorIs(t, e.Err(), ErrEventsStalled, "the stall must be recorded as the terminal error")
+	assert.ErrorIs(t, e.Push(constFrame(160, 0.5), 20), ErrEngineStopped, "the session is over after a stall")
+
+	e.Stop() // closes the events channel; the buffered event stays readable
+	evs := drainEvents(e)
+	require.Len(t, evs, 1)
+	assert.Equal(t, EventSpeechStart, evs[0].Kind)
+}
+
+func TestEngine_LifecycleGuards(t *testing.T) {
+	// Push/FeedChunk reject once shutdown has begun.
+	e, _ := newTestEngine(t, nil)
+	require.NoError(t, e.Start(context.Background()))
+	e.Stop()
+	assert.ErrorIs(t, e.Push(constFrame(160, 0.1), 0), ErrEngineStopped)
+	assert.ErrorIs(t, e.FeedChunk(constFrame(160, 0.1)), ErrEngineStopped)
+	assert.NoError(t, e.Err(), "a clean Stop records no terminal error")
+
+	// Start rejects an already-cancelled context without launching.
+	e2, _ := newTestEngine(t, nil)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	assert.ErrorIs(t, e2.Start(ctx), context.Canceled)
+
+	// After a ctx-cancel shutdown, the engine reports stopped — not
+	// "already started" — and rejects feeds.
+	e3, _ := newTestEngine(t, nil)
+	ctx3, cancel3 := context.WithCancel(context.Background())
+	require.NoError(t, e3.Start(ctx3))
+	cancel3()
+	for range e3.Events() {
+	} // closed by the ctx-cancel shutdown
+	assert.ErrorIs(t, e3.Start(context.Background()), ErrEngineStopped)
+	assert.ErrorIs(t, e3.Push(constFrame(160, 0.1), 0), ErrEngineStopped)
 }
 
 func TestEngine_ConcurrentAPIUnderRace(t *testing.T) {

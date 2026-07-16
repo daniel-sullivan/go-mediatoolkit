@@ -4,6 +4,7 @@ import (
 	"math"
 	"sync"
 
+	"github.com/daniel-sullivan/go-mediatoolkit/buffers"
 	"github.com/daniel-sullivan/go-mediatoolkit/mutations"
 )
 
@@ -33,7 +34,7 @@ type jitterBuffer struct {
 	chunker *mutations.StreamChunker
 
 	// frames is the FIFO of ready 10 ms frames, oldest first.
-	frames fifo[jitterFrame]
+	frames buffers.Queue[jitterFrame]
 
 	// pendingSeam marks that the next frame sliced begins a new
 	// logical chunk: it is transferred onto that frame (seam), so the
@@ -45,7 +46,7 @@ type jitterBuffer struct {
 	// voiced frame read — the outgoing side of the next seam blend.
 	tail []float64
 
-	slab slab
+	slab buffers.Slab
 }
 
 // jitterFrame is one queued frame; seam marks it as the first frame
@@ -91,8 +92,8 @@ func (j *jitterBuffer) markBoundary() {
 // queues it, transferring an armed seam onto it. Callers must hold
 // mu. Always returns nil (the error is the chunker callback shape).
 func (j *jitterBuffer) enqueueFrame(chunk []float64) error {
-	j.frames.push(jitterFrame{
-		samples: append(j.slab.take(), chunk...),
+	j.frames.Push(jitterFrame{
+		samples: append(j.slab.Take(), chunk...),
 		seam:    j.pendingSeam,
 	})
 	j.pendingSeam = false
@@ -105,8 +106,12 @@ func (j *jitterBuffer) enqueueFrame(chunk []float64) error {
 func (j *jitterBuffer) clear() {
 	j.mu.Lock()
 	defer j.mu.Unlock()
-	for j.frames.len() > 0 {
-		j.slab.put(j.frames.pop().samples)
+	for {
+		f, ok := j.frames.Pop()
+		if !ok {
+			break
+		}
+		j.slab.Put(f.samples)
 	}
 	j.chunker.Reset()
 	j.pendingSeam = false
@@ -121,16 +126,15 @@ func (j *jitterBuffer) clear() {
 func (j *jitterBuffer) read(dst []float64) bool {
 	j.mu.Lock()
 	defer j.mu.Unlock()
-	if j.frames.len() == 0 {
+	f, ok := j.frames.Pop()
+	if !ok {
 		for i := range dst {
 			dst[i] = 0
 		}
 		return false
 	}
-
-	f := j.frames.pop()
 	copy(dst, f.samples)
-	j.slab.put(f.samples)
+	j.slab.Put(f.samples)
 	if f.seam && len(j.tail) > 0 && j.fadeSamples > 0 {
 		equalPowerBlend(j.tail, dst, j.channels)
 	}

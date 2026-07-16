@@ -3,7 +3,9 @@ package duplex
 import (
 	"sync"
 	"sync/atomic"
+	"time"
 
+	"github.com/daniel-sullivan/go-mediatoolkit/buffers"
 	"github.com/daniel-sullivan/go-mediatoolkit/vad"
 )
 
@@ -20,9 +22,9 @@ type captureQueue struct {
 
 	capSamples int
 
-	frames fifo[captureFrame]
+	frames buffers.Queue[captureFrame]
 	total  int
-	slab   slab
+	slab   buffers.Slab
 
 	dropped atomic.Uint64
 }
@@ -49,7 +51,7 @@ func (q *captureQueue) push(frame []float64, tag int64) error {
 		q.dropped.Add(1)
 		return ErrCaptureOverflow
 	}
-	q.frames.push(captureFrame{samples: append(q.slab.take(), frame...), tag: tag})
+	q.frames.Push(captureFrame{samples: append(q.slab.Take(), frame...), tag: tag})
 	q.total += len(frame)
 	return nil
 }
@@ -68,12 +70,15 @@ func (q *captureQueue) queued() int {
 func (q *captureQueue) drainInto(accum []float64, spans []tagSpan, want int) ([]float64, []tagSpan) {
 	q.mu.Lock()
 	defer q.mu.Unlock()
-	for len(accum) < want && q.frames.len() > 0 {
-		f := q.frames.pop()
+	for len(accum) < want {
+		f, ok := q.frames.Pop()
+		if !ok {
+			break
+		}
 		accum = append(accum, f.samples...)
 		spans = append(spans, tagSpan{tag: f.tag, n: len(f.samples)})
 		q.total -= len(f.samples)
-		q.slab.put(f.samples)
+		q.slab.Put(f.samples)
 	}
 	return accum, spans
 }
@@ -137,7 +142,7 @@ func (e *Engine) consumeSpanTag() int64 {
 // chain and the speech-event state machine: AEC (echo removal against
 // the render side's far-end feed) → capture chain → detector
 // (pass-through observer), then routes the post-DSP frame by speech
-// state — forwarded as an AudioFrame event while in speech, banked
+// state — forwarded as an EventAudioFrame while in speech, banked
 // into the pre-roll otherwise.
 func (e *Engine) processCaptureFrame(frame []float64, tag int64) {
 	if e.aec != nil {
@@ -157,22 +162,22 @@ func (e *Engine) processCaptureFrame(frame []float64, tag int64) {
 			e.emitSpeechStart(tr, tag)
 		case tr.Kind == vad.SpeechEnd && e.inSpeech:
 			e.inSpeech = false
-			e.send(SpeechStop{Tag: tag})
+			e.send(Event{Kind: EventSpeechStop, Tag: tag})
 		}
 	}
 
 	if e.inSpeech {
-		e.send(AudioFrame{Frame: append([]float64(nil), frame...), Tag: tag})
+		e.send(Event{Kind: EventAudioFrame, Frame: append([]float64(nil), frame...), Tag: tag})
 	} else {
 		e.preroll.Push(frame, tag)
 	}
 }
 
 // emitSpeechStart delivers the utterance-start sequence: the
-// SpeechStart event (back-dated by the lead-in), the synthetic
-// lead-in silence frames counting up toward the real start, then the
-// pre-roll replay. The utterance's start is the oldest pre-roll tag —
-// the earliest audio about to be replayed — or the triggering live
+// EventSpeechStart (back-dated by the lead-in), the synthetic lead-in
+// silence frames counting up toward the real start, then the pre-roll
+// replay. The utterance's start is the oldest pre-roll tag — the
+// earliest audio about to be replayed — or the triggering live
 // frame's tag when the pre-roll is empty or disabled. Every
 // synthesised tag is clamped at 0, so tags near the start of a
 // session can repeat rather than go negative.
@@ -182,17 +187,22 @@ func (e *Engine) emitSpeechStart(tr vad.SpeechEvent, liveTag int64) {
 		realStart = t
 	}
 
-	e.send(SpeechStart{Timestamp: clampTag(realStart - int64(e.leadInFrames)*e.tagsPerFrame), OnsetFrame: tr.Frame})
+	e.send(Event{
+		Kind:       EventSpeechStart,
+		Timestamp:  clampTag(realStart - int64(e.leadInFrames)*e.tagsPerFrame),
+		OnsetFrame: tr.Frame,
+	})
 
 	for i := 0; i < e.leadInFrames; i++ {
-		e.send(AudioFrame{
+		e.send(Event{
+			Kind:  EventAudioFrame,
 			Frame: make([]float64, e.frameSamples),
 			Tag:   clampTag(realStart - int64(e.leadInFrames-i)*e.tagsPerFrame),
 		})
 	}
 
 	e.preroll.Replay(func(f []float64, tag int64) {
-		e.send(AudioFrame{Frame: append([]float64(nil), f...), Tag: tag})
+		e.send(Event{Kind: EventAudioFrame, Frame: append([]float64(nil), f...), Tag: tag})
 	})
 }
 
@@ -204,14 +214,31 @@ func clampTag(t int64) int64 {
 	return t
 }
 
-// send delivers ev to the event channel in FIFO order. It blocks when
-// the channel is full rather than dropping: an AudioFrame dropped
-// here would tear a hole in the audio a downstream ASR transcribes,
-// which is strictly worse than a late tick. Stop unblocks a pending
-// send (the event is then discarded with the session).
+// send delivers ev to the event channel in FIFO order. When the
+// channel is full it blocks — an EventAudioFrame dropped here would
+// tear a hole in the audio a downstream ASR transcribes, which is
+// strictly worse than a late tick — but not forever: a send still
+// blocked after Config.StallTimeout declares the consumer stalled,
+// records ErrEventsStalled (see Err), and shuts the session down.
+// Stop likewise unblocks a pending send (the event is then discarded
+// with the session).
 func (e *Engine) send(ev Event) {
 	select {
 	case e.events <- ev:
+		return
 	case <-e.stop:
+		return
+	default:
+	}
+
+	timer := time.NewTimer(e.stallTimeout)
+	defer timer.Stop()
+	select {
+	case e.events <- ev:
+	case <-e.stop:
+	case <-timer.C:
+		err := ErrEventsStalled
+		e.err.Store(&err)
+		e.shutdown()
 	}
 }

@@ -126,10 +126,10 @@ func TestEngine_AECLoopbackSuppressesEchoThenHearsRealSpeech(t *testing.T) {
 		require.NoError(t, e.Push(capture, int64(k*10)))
 
 		for _, ev := range drainEvents(e) {
-			if _, ok := ev.(SpeechStop); ok && k >= speechTo {
+			if ev.Kind == EventSpeechStop && k >= speechTo {
 				sawStop = true
 			}
-			if _, ok := ev.(SpeechStart); !ok {
+			if ev.Kind != EventSpeechStart {
 				continue
 			}
 			switch {

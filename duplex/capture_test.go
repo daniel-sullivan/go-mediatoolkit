@@ -52,9 +52,9 @@ func TestEngine_CaptureBurstFullyProcessedAcrossTicks(t *testing.T) {
 
 	countAudio := func(evs []Event) (n int, tags []int64) {
 		for _, ev := range evs {
-			if af, ok := ev.(AudioFrame); ok {
+			if ev.Kind == EventAudioFrame {
 				n++
-				tags = append(tags, af.Tag)
+				tags = append(tags, ev.Tag)
 			}
 		}
 		return n, tags
@@ -95,8 +95,8 @@ func TestEngine_CaptureReframingAssignsFirstSampleTags(t *testing.T) {
 	e.tick()
 	var tags []int64
 	for _, ev := range drainEvents(e) {
-		if af, ok := ev.(AudioFrame); ok {
-			tags = append(tags, af.Tag)
+		if ev.Kind == EventAudioFrame {
+			tags = append(tags, ev.Tag)
 		}
 	}
 	assert.Equal(t, []int64{100, 100, 200, 300}, tags,
@@ -130,28 +130,28 @@ func TestEngine_EventSequenceFullUtterance(t *testing.T) {
 	evs := drainEvents(e)
 	require.Len(t, evs, 8, "start + 3 lead-in + 3 pre-roll + 1 live")
 
-	start, ok := evs[0].(SpeechStart)
-	require.True(t, ok, "SpeechStart must come first")
+	start := evs[0]
+	require.Equal(t, EventSpeechStart, start.Kind, "EventSpeechStart must come first")
 	assert.Equal(t, int64(40), start.Timestamp, "oldest pre-roll tag 70 backdated by 30ms lead-in")
 	assert.Positive(t, start.OnsetFrame)
 
 	for i, wantTag := range []int64{40, 50, 60} {
-		af, ok := evs[1+i].(AudioFrame)
-		require.True(t, ok)
+		af := evs[1+i]
+		require.Equal(t, EventAudioFrame, af.Kind)
 		assert.Equal(t, wantTag, af.Tag, "lead-in tags count up toward the real start")
 		assert.Equal(t, constFrame(160, 0), af.Frame, "lead-in frames are silence")
 	}
 
 	for i, wantTag := range []int64{70, 80, 90} {
-		af, ok := evs[4+i].(AudioFrame)
-		require.True(t, ok)
+		af := evs[4+i]
+		require.Equal(t, EventAudioFrame, af.Kind)
 		assert.Equal(t, wantTag, af.Tag, "pre-roll replays oldest-first with original tags")
 		assert.InDeltaSlice(t, constFrame(160, 0.2), af.Frame, 1e-12,
 			"pre-roll frames are post-DSP (0.4 through the 0.5 gain chain)")
 	}
 
-	live, ok := evs[7].(AudioFrame)
-	require.True(t, ok)
+	live := evs[7]
+	require.Equal(t, EventAudioFrame, live.Kind)
 	assert.Equal(t, int64(100), live.Tag)
 	assert.InDeltaSlice(t, constFrame(160, 0.3), live.Frame, 1e-12, "live frames are post-DSP")
 
@@ -162,8 +162,8 @@ func TestEngine_EventSequenceFullUtterance(t *testing.T) {
 	}
 	evs = drainEvents(e)
 	require.Len(t, evs, 2)
-	assert.Equal(t, int64(110), evs[0].(AudioFrame).Tag)
-	assert.Equal(t, int64(120), evs[1].(AudioFrame).Tag)
+	assert.Equal(t, int64(110), evs[0].Tag)
+	assert.Equal(t, int64(120), evs[1].Tag)
 
 	// Speech stops on the frame tagged 130: a SpeechStop, and that
 	// frame goes to the pre-roll for the NEXT utterance instead of
@@ -173,9 +173,8 @@ func TestEngine_EventSequenceFullUtterance(t *testing.T) {
 	e.tick()
 	evs = drainEvents(e)
 	require.Len(t, evs, 1)
-	stop, ok := evs[0].(SpeechStop)
-	require.True(t, ok)
-	assert.Equal(t, int64(130), stop.Tag)
+	require.Equal(t, EventSpeechStop, evs[0].Kind)
+	assert.Equal(t, int64(130), evs[0].Tag)
 
 	// The next utterance's replay proves frame 130 was banked.
 	det.trigger(vad.SpeechStart)
@@ -183,9 +182,9 @@ func TestEngine_EventSequenceFullUtterance(t *testing.T) {
 	e.tick()
 	evs = drainEvents(e)
 	var replayTags []int64
-	for _, ev := range evs[1:] { // skip SpeechStart
-		if af, ok := ev.(AudioFrame); ok {
-			replayTags = append(replayTags, af.Tag)
+	for _, ev := range evs[1:] { // skip the EventSpeechStart
+		if ev.Kind == EventAudioFrame {
+			replayTags = append(replayTags, ev.Tag)
 		}
 	}
 	assert.Contains(t, replayTags, int64(130), "post-utterance frame must resume pre-roll accumulation")
@@ -203,9 +202,10 @@ func TestEngine_SpeechStartTimestampClampsAtZero(t *testing.T) {
 
 	evs := drainEvents(e)
 	require.Len(t, evs, 5, "start + 3 lead-in + live")
-	assert.Equal(t, int64(0), evs[0].(SpeechStart).Timestamp, "back-dating clamps at 0")
+	require.Equal(t, EventSpeechStart, evs[0].Kind)
+	assert.Equal(t, int64(0), evs[0].Timestamp, "back-dating clamps at 0")
 	for _, ev := range evs[1:4] {
-		assert.Equal(t, int64(0), ev.(AudioFrame).Tag, "lead-in tags clamp at 0 near session start")
+		assert.Equal(t, int64(0), ev.Tag, "lead-in tags clamp at 0 near session start")
 	}
 }
 
@@ -228,11 +228,10 @@ func TestEngine_PreRollDisabledFallsBackToLiveTag(t *testing.T) {
 
 	evs := drainEvents(e)
 	require.Len(t, evs, 5, "start + 3 lead-in + live only — no replay")
-	assert.Equal(t, int64(470), evs[0].(SpeechStart).Timestamp, "live tag 500 backdated by the 30ms lead-in")
-	assert.Equal(t, []int64{470, 480, 490}, []int64{
-		evs[1].(AudioFrame).Tag, evs[2].(AudioFrame).Tag, evs[3].(AudioFrame).Tag,
-	})
-	assert.Equal(t, int64(500), evs[4].(AudioFrame).Tag)
+	require.Equal(t, EventSpeechStart, evs[0].Kind)
+	assert.Equal(t, int64(470), evs[0].Timestamp, "live tag 500 backdated by the 30ms lead-in")
+	assert.Equal(t, []int64{470, 480, 490}, []int64{evs[1].Tag, evs[2].Tag, evs[3].Tag})
+	assert.Equal(t, int64(500), evs[4].Tag)
 }
 
 func TestEngine_InSpeechGuardAbsorbsRedundantTransitions(t *testing.T) {
@@ -251,10 +250,10 @@ func TestEngine_InSpeechGuardAbsorbsRedundantTransitions(t *testing.T) {
 
 	var starts, stops int
 	for _, ev := range drainEvents(e) {
-		switch ev.(type) {
-		case SpeechStart:
+		switch ev.Kind {
+		case EventSpeechStart:
 			starts++
-		case SpeechStop:
+		case EventSpeechStop:
 			stops++
 		}
 	}
@@ -268,7 +267,7 @@ func TestEngine_InSpeechGuardAbsorbsRedundantTransitions(t *testing.T) {
 	require.NoError(t, e.Push(constFrame(160, 0.1), 30))
 	e.tick()
 	for _, ev := range drainEvents(e) {
-		if _, ok := ev.(SpeechStop); ok {
+		if ev.Kind == EventSpeechStop {
 			stops++
 		}
 	}
@@ -326,8 +325,8 @@ func TestEngine_StartAndStopWithinOneFrame(t *testing.T) {
 
 	evs := drainEvents(e)
 	require.Len(t, evs, 2)
-	assert.IsType(t, SpeechStart{}, evs[0])
-	assert.IsType(t, SpeechStop{}, evs[1])
+	assert.Equal(t, EventSpeechStart, evs[0].Kind)
+	assert.Equal(t, EventSpeechStop, evs[1].Kind)
 	tag, ok := e.preroll.OldestTag()
 	require.True(t, ok)
 	assert.Equal(t, int64(100), tag, "the burst frame goes to the pre-roll, not the event stream")

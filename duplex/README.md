@@ -34,10 +34,10 @@ e.MarkChunkBoundary()     // seam between independently-generated chunks
 e.Push(micFrame, tsMs)    // capture in, tagged (any goroutine)
 
 for ev := range e.Events() {
-    switch ev := ev.(type) {
-    case duplex.SpeechStart: // barge-in: e.ClearPending()
-    case duplex.AudioFrame:  // feed the ASR: ev.Frame, ev.Tag
-    case duplex.SpeechStop:  // finalize the ASR turn
+    switch ev.Kind {
+    case duplex.EventSpeechStart: // barge-in: e.ClearPending()
+    case duplex.EventAudioFrame:  // feed the ASR: ev.Frame, ev.Tag
+    case duplex.EventSpeechStop:  // finalize the ASR turn
     }
 }
 ```
@@ -60,15 +60,15 @@ All render methods are safe from any goroutine.
 
 ### Speech events
 
-Events arrive on one **FIFO channel** (`Events()`). Per utterance:
+Events arrive on one **FIFO channel** (`Events()`) as a flat tagged union — one `Event` struct whose `Kind` (`EventSpeechStart`/`EventAudioFrame`/`EventSpeechStop`) selects which fields are meaningful, so the 100 Hz in-speech stream carries no per-event interface boxing. Per utterance:
 
-1. **`SpeechStart`** — fired once (redundant detector transitions are absorbed). `Timestamp` is back-dated to the oldest pre-roll tag (or the live frame's tag if pre-roll is empty/disabled) minus `LeadIn`, clamped ≥ 0; `OnsetFrame` is the detector's own back-timestamped onset position.
+1. **`EventSpeechStart`** — fired once (redundant detector transitions are absorbed). `Timestamp` is back-dated to the oldest pre-roll tag (or the live frame's tag if pre-roll is empty/disabled) minus `LeadIn`, clamped ≥ 0; `OnsetFrame` is the detector's own back-timestamped onset position.
 2. **Lead-in silence** — `LeadIn` (default 30 ms) of synthetic zero frames with back-dated tags counting up toward the real start, giving a downstream ASR a beat of empty audio to spin up on.
 3. **Pre-roll replay** — the post-DSP out-of-speech frames banked while the detector was still confirming the onset (`Config.PreRoll`, via `vad.PreRoll`), oldest first with their original tags: the first syllables reach the ASR.
-4. **Live frames** — post-DSP `AudioFrame`s while speech lasts.
-5. **`SpeechStop`** — on the detector's inactive transition; the engine resumes banking pre-roll for the next utterance.
+4. **Live frames** — post-DSP `EventAudioFrame`s while speech lasts.
+5. **`EventSpeechStop`** — on the detector's inactive transition; the engine resumes banking pre-roll for the next utterance.
 
-The audio goroutine **blocks** when the events channel is full rather than dropping — a dropped frame would corrupt the downstream ASR transcript, which is strictly worse than a late tick. Size `Config.EventBuffer` (default 256) for the consumer's worst-case lag.
+The audio goroutine **blocks** when the events channel is full rather than dropping — a dropped frame would corrupt the downstream ASR transcript, which is strictly worse than a late tick. Size `Config.EventBuffer` (default 256) for the consumer's worst-case lag; `Config.StallTimeout` (default 5 s) is the backstop for a consumer that has genuinely died — a send still blocked after it fails the session with `ErrEventsStalled` (readable via `Err()` once the channel closes) instead of freezing the audio loop forever. Duration knobs are validated against generous upper bounds (`PreRoll`/`CaptureBuffer` ≤ 1 min, `LeadIn` ≤ 1 s, `Crossfade` ≤ 10 ms, `TagUnit` must divide the 10 ms frame) so a unit mistake fails construction instead of allocating gigabytes.
 
 ## The AEC coupling
 
@@ -76,11 +76,11 @@ The audio goroutine **blocks** when the events channel is full rather than dropp
 
 ## Detector ownership and tuning
 
-The engine is the `Detector`'s **exclusive feeder** (the vad package's one-feeder-per-stream contract). Detector tuning setters are lock-free atomics, safe from any goroutine and effective at the next decision window, so adjusting them live mid-stream — even mid-utterance — is supported. Two are passed through on the engine for probability-scored detectors: `SetVADThreshold` (e.g. raising the bar while known far-end audio plays) and `SetVADMinSilence` (the endpointing wait — lengthen it while a long-form answer is expected, shorten it for rapid turn-taking); both return `ErrTuningUnsupported` for detectors without the corresponding setter. Every other knob is reachable on the concrete detector you constructed (also via `Detector()`). For VADIterator-style immediate onsets pair the pre-roll with `MinSpeech: time.Nanosecond, SpeechPad: time.Nanosecond` (see the [vad README](../vad/README.md)).
+The engine is the `Detector`'s **exclusive feeder** (the vad package's one-feeder-per-stream contract). Detector tuning setters are lock-free atomics, safe from any goroutine and effective at the next decision window, so adjusting them live mid-stream — even mid-utterance — is supported. Two are passed through on the engine for probability-scored detectors: `SetVADThreshold` (e.g. raising the bar while known far-end audio plays) and `SetVADMinSilence` (the endpointing wait — lengthen it while a long-form answer is expected, shorten it for rapid turn-taking); both return `ErrTuningUnsupported` for detectors without the corresponding setter. Every other knob is reachable on the concrete detector you constructed (also via `Detector()`). Pair the detector with `PreRoll` deliberately: the pre-roll supplies the physical lead-in audio, so a detector-side `SpeechPad` is redundant with it — the pad only back-shifts `OnsetFrame` to before the audio the replay contains, it adds none. For VADIterator-style immediate onsets use `MinSpeech: time.Nanosecond, SpeechPad: time.Nanosecond` and let the pre-roll cover the lead-in (see the [vad README](../vad/README.md)); the `vad.Detector` interface gives the engine no way to verify this, so it is a documented contract.
 
 ## Lifecycle and metrics
 
-`New` validates everything up front (constructors return errors, never panic). `Start(ctx)` launches the audio goroutine; `Stop()` (or ctx cancellation) halts it, cancels the detector subscription, and closes the events channel — already-queued events remain readable. An engine is single-use. `Metrics()` is a lock-free snapshot from any goroutine: AEC metrics, capture queue depth, dropped capture frames, rendered frame count.
+`New` validates everything up front (constructors return errors, never panic). `Start(ctx)` launches the audio goroutine; `Stop()` (or ctx cancellation) halts it, cancels the detector subscription, and closes the events channel — already-queued events remain readable. An engine is single-use. `Metrics()` is a lock-free snapshot from any goroutine: AEC metrics, capture queue depth, dropped capture frames, rendered frame count. `Err()` reports the terminal session error (`ErrEventsStalled`) or nil for a clean stop.
 
 ## Verification
 

@@ -12,6 +12,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"math"
@@ -86,7 +87,9 @@ func run() error {
 				toneSample++
 			}
 		}
-		if err := e.Push(capture, seq*10); err != nil {
+		// ErrEngineStopped is expected once at shutdown — a final
+		// output callback can race Stop.
+		if err := e.Push(capture, seq*10); err != nil && !errors.Is(err, duplex.ErrEngineStopped) {
 			log.Printf("push: %v", err)
 		}
 	})
@@ -117,12 +120,12 @@ func run() error {
 
 	var speechFrames int
 	for ev := range e.Events() {
-		switch ev := ev.(type) {
-		case duplex.SpeechStart:
+		switch ev.Kind {
+		case duplex.EventSpeechStart:
 			fmt.Printf("speech start at tag %dms (echo-only playout never triggered one)\n", ev.Timestamp)
-		case duplex.AudioFrame:
+		case duplex.EventAudioFrame:
 			speechFrames++
-		case duplex.SpeechStop:
+		case duplex.EventSpeechStop:
 			fmt.Printf("speech stop at tag %dms after %d frames (%dms of utterance audio)\n",
 				ev.Tag, speechFrames, speechFrames*10)
 		}

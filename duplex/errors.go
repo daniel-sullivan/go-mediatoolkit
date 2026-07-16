@@ -48,9 +48,18 @@ var (
 	// already running.
 	ErrEngineStarted = errors.New("duplex: engine already started")
 
-	// ErrEngineStopped is returned by Start after Stop: an Engine is
-	// single-use, construct a new one for a fresh session.
+	// ErrEngineStopped is returned by Start, FeedChunk, and Push once
+	// the engine has begun shutting down (Stop, context cancellation,
+	// or a stall failure — see Err): an Engine is single-use,
+	// construct a new one for a fresh session.
 	ErrEngineStopped = errors.New("duplex: engine stopped")
+
+	// ErrEventsStalled is the terminal session error recorded (see
+	// Engine.Err) when an event delivery stayed blocked on a full
+	// Events channel for Config.StallTimeout: the consumer is
+	// considered dead, and failing the session beats freezing the
+	// audio loop behind it forever.
+	ErrEventsStalled = errors.New("duplex: events consumer stalled")
 
 	// ErrTuningUnsupported is returned by the SetVAD* passthroughs
 	// when the configured detector does not expose the corresponding

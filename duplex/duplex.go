@@ -88,16 +88,27 @@ const frameDuration = 10 * time.Millisecond
 // toolkit's other multi-channel constructors use.
 const maxChannels = 64
 
-// Defaults substituted for zero-valued Config fields. Wherever a
-// literal zero would be meaningful the field doc names the epsilon
-// escape hatch (e.g. Crossfade: time.Nanosecond for no fade) — the
-// loudness convention.
+// Defaults substituted for zero-valued Config fields, and the upper
+// bounds validation enforces on the duration knobs — each cap is far
+// beyond any real session value, so exceeding one is almost certainly
+// a unit mistake (seconds passed as milliseconds, a tag passed as a
+// duration) that should fail construction rather than allocate
+// gigabytes or arm an hour-long stall timer. Wherever a literal zero
+// would be meaningful the field doc names the epsilon escape hatch
+// (e.g. Crossfade: time.Nanosecond for no fade) — the loudness
+// convention.
 const (
 	defaultLeadIn        = 30 * time.Millisecond
 	defaultTagUnit       = time.Millisecond
 	defaultCrossfade     = 5 * time.Millisecond
 	defaultCaptureBuffer = 2500 * time.Millisecond
 	defaultEventBuffer   = 256
+	defaultStallTimeout  = 5 * time.Second
+
+	maxPreRoll       = time.Minute
+	maxLeadIn        = time.Second
+	maxCaptureBuffer = time.Minute
+	maxStallTimeout  = time.Minute
 )
 
 // AECConfig enables acoustic echo cancellation. The engine builds the
@@ -140,6 +151,18 @@ type Config struct {
 	// (vad.NewSileroDetector, vad.NewEnergyDetector, ...). Required;
 	// must be constructed for this SampleRate/Channels. The engine
 	// becomes its exclusive feeder.
+	//
+	// Pair it with PreRoll deliberately: the pre-roll supplies the
+	// physical lead-in audio an onset needs, so a detector-side
+	// SpeechPad (SileroConfig.SpeechPad) is redundant with it — the
+	// pad only back-shifts the detector's reported onset position
+	// (Event.OnsetFrame) to before the audio the replay actually
+	// contains, it does not add audio. For VADIterator-style
+	// immediate onsets configure MinSpeech: time.Nanosecond and
+	// SpeechPad: time.Nanosecond and let the pre-roll cover the
+	// lead-in (the vad.Detector interface exposes no way for the
+	// engine to verify this, so it is a documented contract, not a
+	// validated one).
 	Detector vad.Detector
 
 	// AEC enables acoustic echo cancellation; nil disables it. When
@@ -152,23 +175,25 @@ type Config struct {
 
 	// PreRoll is the capture pre-roll window: how much out-of-speech
 	// post-DSP audio to retain for replay when speech starts (see
-	// vad.PreRoll). Zero disables pre-roll; must not be negative.
+	// vad.PreRoll, and the Detector field's pairing note). Zero
+	// disables pre-roll; must be in [0, 1 minute].
 	PreRoll time.Duration
 
-	// LeadIn is how much synthetic silence to emit (as AudioFrame
-	// events with back-dated tags) between SpeechStart and the
-	// pre-roll replay, giving a downstream ASR a beat of empty audio
-	// to spin up on. Floored to whole frames. Zero selects 30 ms;
-	// pass time.Nanosecond (or anything under one frame) for none.
-	// Must not be negative.
+	// LeadIn is how much synthetic silence to emit (as
+	// EventAudioFrame events with back-dated tags) between
+	// EventSpeechStart and the pre-roll replay, giving a downstream
+	// ASR a beat of empty audio to spin up on. Floored to whole
+	// frames. Zero selects 30 ms; pass time.Nanosecond (or anything
+	// under one frame) for none. Must be in [0, 1 second].
 	LeadIn time.Duration
 
 	// TagUnit is the duration one capture-tag increment represents,
 	// used to back-date the synthetic lead-in tags and the
-	// SpeechStart timestamp (e.g. time.Millisecond for
+	// EventSpeechStart timestamp (e.g. time.Millisecond for
 	// milliseconds-since-session-start tags). Zero selects 1 ms.
-	// Must not be negative; a TagUnit longer than one frame
-	// degenerates to no back-dating.
+	// Must be positive, at most one frame (10 ms), and divide the
+	// frame evenly — coarser or non-dividing units cannot back-date
+	// exactly and are rejected rather than silently degraded.
 	TagUnit time.Duration
 
 	// RenderChain is an ordered effects chain applied to every voice
@@ -188,22 +213,31 @@ type Config struct {
 	Ambient *AmbientConfig
 
 	// Crossfade is the equal-power fade window applied across marked
-	// chunk seams (MarkChunkBoundary), capped at one frame (10 ms).
-	// Zero selects 5 ms; pass time.Nanosecond for a hard cut. Must
-	// not be negative.
+	// chunk seams (MarkChunkBoundary). Zero selects 5 ms; pass
+	// time.Nanosecond for a hard cut. Must be in [0, one frame
+	// (10 ms)] — a fade cannot span multiple frames.
 	Crossfade time.Duration
 
 	// CaptureBuffer bounds the capture queue: pushes beyond this much
 	// buffered audio are dropped (ErrCaptureOverflow). Zero selects
-	// 2.5 s; floored to one frame. Must not be negative.
+	// 2.5 s; floored to one frame. Must be in [0, 1 minute].
 	CaptureBuffer time.Duration
 
 	// EventBuffer is the Events channel capacity. The audio goroutine
 	// BLOCKS when it is full rather than dropping (a dropped frame
 	// would corrupt a downstream ASR transcript), so size it for the
-	// consumer's worst-case lag. Zero selects 256; must not be
-	// negative.
+	// consumer's worst-case lag — with StallTimeout as the backstop
+	// for a consumer that has genuinely died. Zero selects 256; must
+	// not be negative.
 	EventBuffer int
+
+	// StallTimeout is how long an event delivery may stay blocked on
+	// a full Events channel before the engine declares the consumer
+	// stalled and fails the session: it records ErrEventsStalled
+	// (see Engine.Err) and shuts down, rather than freezing the
+	// audio loop forever behind a dead consumer. Zero selects 5 s;
+	// must be in [0, 1 minute].
+	StallTimeout time.Duration
 
 	// Output, if non-nil, is installed as the initial output callback
 	// (see SetOutput).
@@ -232,6 +266,7 @@ type Engine struct {
 	preroll      *vad.PreRoll
 	leadInFrames int
 	tagsPerFrame int64
+	stallTimeout time.Duration
 
 	// Tick-owned state (the audio goroutine, or a test driving tick
 	// directly).
@@ -244,6 +279,7 @@ type Engine struct {
 
 	out atomic.Pointer[func(frame []float64, seq int64)]
 	seq atomic.Int64
+	err atomic.Pointer[error]
 
 	events     chan Event
 	stop       chan struct{}
@@ -286,8 +322,14 @@ func New(cfg Config) (*Engine, error) {
 			}
 		}
 	}
-	if cfg.PreRoll < 0 || cfg.LeadIn < 0 || cfg.TagUnit < 0 || cfg.Crossfade < 0 ||
-		cfg.CaptureBuffer < 0 || cfg.EventBuffer < 0 {
+	if cfg.PreRoll < 0 || cfg.PreRoll > maxPreRoll ||
+		cfg.LeadIn < 0 || cfg.LeadIn > maxLeadIn ||
+		cfg.TagUnit < 0 || cfg.TagUnit > frameDuration ||
+		(cfg.TagUnit > 0 && frameDuration%cfg.TagUnit != 0) ||
+		cfg.Crossfade < 0 || cfg.Crossfade > frameDuration ||
+		cfg.CaptureBuffer < 0 || cfg.CaptureBuffer > maxCaptureBuffer ||
+		cfg.StallTimeout < 0 || cfg.StallTimeout > maxStallTimeout ||
+		cfg.EventBuffer < 0 {
 		return nil, ErrBadConfig
 	}
 
@@ -343,9 +385,6 @@ func New(cfg Config) (*Engine, error) {
 	if crossfade == 0 {
 		crossfade = defaultCrossfade
 	}
-	if crossfade > frameDuration {
-		crossfade = frameDuration
-	}
 	captureBuffer := cfg.CaptureBuffer
 	if captureBuffer == 0 {
 		captureBuffer = defaultCaptureBuffer
@@ -353,6 +392,10 @@ func New(cfg Config) (*Engine, error) {
 	eventBuffer := cfg.EventBuffer
 	if eventBuffer == 0 {
 		eventBuffer = defaultEventBuffer
+	}
+	stallTimeout := cfg.StallTimeout
+	if stallTimeout == 0 {
+		stallTimeout = defaultStallTimeout
 	}
 
 	fadeSamples := int(mutations.DurationToFrames(crossfade, cfg.SampleRate)) * cfg.Channels
@@ -372,6 +415,7 @@ func New(cfg Config) (*Engine, error) {
 		preroll:      preroll,
 		leadInFrames: int(leadIn / frameDuration),
 		tagsPerFrame: int64(frameDuration / tagUnit),
+		stallTimeout: stallTimeout,
 		renderFrame:  make([]float64, frameSamples),
 		captureFrame: make([]float64, frameSamples),
 		events:       make(chan Event, eventBuffer),
@@ -393,8 +437,14 @@ func New(cfg Config) (*Engine, error) {
 
 // Start launches the paced audio goroutine. The engine stops when ctx
 // is cancelled or Stop is called, whichever comes first. Returns
-// ErrEngineStarted if already running, ErrEngineStopped after Stop.
+// ctx.Err() (without starting anything) if ctx is already cancelled,
+// ErrEngineStarted if already running, ErrEngineStopped after Stop —
+// including after a stop initiated by ctx cancellation or a stalled
+// consumer (see Err).
 func (e *Engine) Start(ctx context.Context) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	if e.stopped {
@@ -415,18 +465,30 @@ func (e *Engine) Start(ctx context.Context) error {
 // audio goroutine has exited.
 func (e *Engine) Stop() {
 	e.mu.Lock()
-	first := !e.stopped
 	started := e.started
-	e.stopped = true
 	e.mu.Unlock()
 
-	if first {
-		close(e.stop)
-	}
+	e.shutdown()
 	if started {
 		<-e.done
 	} else {
 		e.finalize()
+	}
+}
+
+// shutdown transitions the engine to stopped exactly once — marking
+// the state and closing the stop channel — from whichever exit path
+// gets there first: Stop, run's ctx cancellation, or a stalled-
+// consumer failure on the audio goroutine. Idempotent; it does NOT
+// wait for the audio goroutine (a shutdown initiated ON that
+// goroutine could never return if it did).
+func (e *Engine) shutdown() {
+	e.mu.Lock()
+	first := !e.stopped
+	e.stopped = true
+	e.mu.Unlock()
+	if first {
+		close(e.stop)
 	}
 }
 
@@ -435,6 +497,7 @@ func (e *Engine) Stop() {
 func (e *Engine) run(ctx context.Context) {
 	defer close(e.done)
 	defer e.finalize()
+	defer e.shutdown() // converge ctx-cancel and stall exits with Stop's state
 
 	ticker := hpt.NewTicker(frameDuration)
 	defer ticker.Stop()
@@ -449,6 +512,29 @@ func (e *Engine) run(ctx context.Context) {
 			e.tick()
 		}
 	}
+}
+
+// halted reports whether the engine has begun shutting down (via
+// Stop, ctx cancellation, or a stall failure).
+func (e *Engine) halted() bool {
+	select {
+	case <-e.stop:
+		return true
+	default:
+		return false
+	}
+}
+
+// Err returns the error that terminated the session, or nil for a
+// session that is still running or was stopped cleanly. Currently the
+// only terminal error is ErrEventsStalled (see Config.StallTimeout).
+// Check it after the Events channel closes to distinguish a clean
+// Stop from a failure. Safe from any goroutine.
+func (e *Engine) Err() error {
+	if p := e.err.Load(); p != nil {
+		return *p
+	}
+	return nil
 }
 
 // finalize releases session resources exactly once: the detector
@@ -497,12 +583,17 @@ func (e *Engine) renderTick() {
 // FeedChunk appends a chunk of voice audio (interleaved, any length —
 // e.g. one streamed synthesis packet) to the render jitter buffer,
 // where it is sliced into 10 ms frames; a trailing partial frame
-// waits for the next chunk to complete it. Safe from any goroutine.
-// Returns ErrBadFrame if len(pcm) is not a whole multiple of
-// Channels.
+// waits for the next chunk to complete it. Safe from any goroutine,
+// including before Start (the audio is buffered until ticking
+// begins). Returns ErrBadFrame if len(pcm) is not a whole multiple of
+// Channels, or ErrEngineStopped once the engine has begun shutting
+// down.
 func (e *Engine) FeedChunk(pcm []float64) error {
 	if len(pcm)%e.channels != 0 {
 		return ErrBadFrame
+	}
+	if e.halted() {
+		return ErrEngineStopped
 	}
 	if len(pcm) == 0 {
 		return nil
@@ -551,13 +642,17 @@ func (e *Engine) SetOutput(fn func(frame []float64, seq int64)) {
 // (push exact 10 ms frames for exact tags). frame is copied. Safe
 // from any goroutine.
 //
-// Returns ErrBadFrame for a misaligned length, or ErrCaptureOverflow
-// when the queue is full — the frame is then dropped (drop-newest)
-// and counted in Metrics().CaptureFramesDropped rather than blocking
-// a network receive loop.
+// Returns ErrBadFrame for a misaligned length, ErrEngineStopped once
+// the engine has begun shutting down, or ErrCaptureOverflow when the
+// queue is full — the frame is then dropped (drop-newest) and counted
+// in Metrics().CaptureFramesDropped rather than blocking a network
+// receive loop.
 func (e *Engine) Push(frame []float64, tag int64) error {
 	if len(frame)%e.channels != 0 {
 		return ErrBadFrame
+	}
+	if e.halted() {
+		return ErrEngineStopped
 	}
 	if len(frame) == 0 {
 		return nil
