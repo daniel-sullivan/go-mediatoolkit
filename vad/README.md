@@ -105,6 +105,24 @@ duck, err := vad.NewDucker(vad.DuckerConfig{
 
 The Ducker sits in the **bed** track's chain and only **reads** `det.Active()`; the detector is fed elsewhere (typically inserted in the voice track's `timeline.EffectSource`). The goroutine-safe atomic readers are what make that cross-track read legal; the ≤ 1-chunk staleness between the two chains is absorbed by the 50/400 ms attack/release ramps. The ducker is deliberately not coupled to the mixer package — it works between any two chains. Defaults: depth −12 dB, attack 50 ms, release 400 ms. See [`examples/ducking`](examples/ducking/main.go), which wires a real `mixer` with the detector on the voice track and the ducker on the bed.
 
+### Pre-rolling an ASR feed (`PreRoll`)
+
+```go
+pre, err := vad.NewPreRoll(vad.PreRollConfig{
+    SampleRate: 16000, Channels: 1,
+    Duration: 300 * time.Millisecond, // 0 disables (Push no-op, Replay empty)
+})
+
+pre.Push(frame, captureTimestamp) // out-of-speech frames, tagged
+// … detector announces speech:
+start, _ := pre.OldestTag()       // back-date the utterance start here
+pre.Replay(func(frame []float64, tag int64) { asr.Feed(frame, tag) })
+```
+
+A detector cannot announce speech the instant it begins (see back-timestamping above), so by announcement time the first syllables have already flowed past. `PreRoll` keeps the most recent `Duration` of caller-framed audio — each frame paired with an opaque `int64` tag, typically a capture timestamp — while no speech is in progress; on `SpeechStart`, `Replay` hands the buffered frames back oldest-first (then clears) so the utterance reaches the consumer whole, and `OldestTag` back-dates the utterance's start to where the replayed audio actually begins. Frame lengths may vary per call; frames replay with the exact boundaries and tags they were pushed with. `SetDuration` live-resizes the window (keeping the newest audio; zero disables). Like a `mutations.Processor`, a `PreRoll` is single-goroutine — drive it from the audio goroutine that feeds the detector.
+
+Pair it with a detector tuned for immediate onset: on `SileroConfig`, `MinSpeech: time.Nanosecond` + `SpeechPad: time.Nanosecond` reproduce the upstream silero-vad `VADIterator` streaming semantics exactly — `SpeechStart` on the first window at or above `Threshold`, no onset gate, no back-padding — with the pre-roll supplying the lead-in audio that `SpeechPad`'s back-padding would otherwise cover.
+
 ## Concurrency
 
 `Process`/`Reset` on any type in this package must be driven from a single goroutine (the audio goroutine), like every `mutations.Processor`. Everything else is deliberately goroutine-safe with **no mutex on the audio path**:

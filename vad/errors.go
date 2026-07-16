@@ -9,7 +9,7 @@ var (
 	// ErrBadSampleRate is returned when a configuration's SampleRate
 	// is below the engine's minimum (Energy: 100 Hz — below that a
 	// 10 ms decision frame holds less than one sample; WebRTC/Silero:
-	// 8000 Hz).
+	// 8000 Hz; PreRoll: any positive rate).
 	ErrBadSampleRate = errors.New("vad: sample rate too low")
 
 	// ErrBadChannels is returned when a channel count is not in 1..64.
