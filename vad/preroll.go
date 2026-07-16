@@ -4,6 +4,7 @@ import (
 	"math"
 	"time"
 
+	"github.com/daniel-sullivan/go-mediatoolkit/buffers"
 	"github.com/daniel-sullivan/go-mediatoolkit/mutations"
 )
 
@@ -100,14 +101,15 @@ type PreRoll struct {
 	// frame (see the type doc's Eviction section).
 	capSamples int
 
-	// frames is a FIFO queue: frames[head:] are the buffered frames,
-	// oldest first. Evicted/replayed slots are recycled through free
-	// so a steady-state Push cycle stops allocating once the queue
-	// has warmed up.
-	frames []preRollFrame
-	head   int
-	total  int // buffered samples across all frames
-	free   [][]float64
+	// frames is the FIFO of buffered frames, oldest first; slab
+	// recycles evicted/replayed frame storage so a steady-state Push
+	// cycle stops allocating once the queue has warmed up. scratch is
+	// Replay's reusable drain buffer (the queue is emptied before the
+	// first callback so reentrant Pushes cannot disturb the replay).
+	frames  buffers.Queue[preRollFrame]
+	total   int // buffered samples across all frames
+	slab    buffers.Slab
+	scratch []preRollFrame
 }
 
 // NewPreRoll constructs a PreRoll for cfg. Returns ErrBadSampleRate
@@ -141,15 +143,7 @@ func (p *PreRoll) Push(frame []float64, tag int64) {
 		return
 	}
 
-	var buf []float64
-	if n := len(p.free); n > 0 {
-		buf = p.free[n-1][:0]
-		p.free[n-1] = nil
-		p.free = p.free[:n-1]
-	}
-	buf = append(buf, frame...)
-
-	p.frames = append(p.frames, preRollFrame{samples: buf, tag: tag})
+	p.frames.Push(preRollFrame{samples: append(p.slab.Take(), frame...), tag: tag})
 	p.total += len(frame)
 	p.evictOverflow()
 }
@@ -164,37 +158,45 @@ func (p *PreRoll) Push(frame []float64, tag int64) {
 // Push new frames into the same PreRoll: they accumulate normally and
 // are not replayed (or cleared) by this call.
 func (p *PreRoll) Replay(fn func(frame []float64, tag int64)) {
-	frames := p.frames[p.head:]
-	p.frames = nil
-	p.head = 0
+	n := p.frames.Len()
+	scratch := p.scratch[:0]
+	for i := 0; i < n; i++ {
+		f, _ := p.frames.Pop()
+		scratch = append(scratch, f)
+	}
 	p.total = 0
-	for i := range frames {
-		fn(frames[i].samples, frames[i].tag)
+	for _, f := range scratch {
+		fn(f.samples, f.tag)
 	}
-	for i := range frames {
-		p.free = append(p.free, frames[i].samples)
-		frames[i].samples = nil
+	for i := range scratch {
+		p.slab.Put(scratch[i].samples)
+		scratch[i] = preRollFrame{}
 	}
+	p.scratch = scratch[:0]
 }
 
 // OldestTag returns the tag of the earliest buffered frame and true,
 // or 0 and false if nothing is buffered. Use it to back-date a speech
 // start timestamp to where a Replay's audio actually begins.
 func (p *PreRoll) OldestTag() (int64, bool) {
-	if p.count() == 0 {
+	f := p.frames.Peek()
+	if f == nil {
 		return 0, false
 	}
-	return p.frames[p.head].tag, true
+	return f.tag, true
 }
 
 // Clear discards all buffered frames (their storage is retained for
 // reuse by later Pushes).
 func (p *PreRoll) Clear() {
-	for p.count() > 0 {
-		p.popOldest()
+	for {
+		f, ok := p.frames.Pop()
+		if !ok {
+			break
+		}
+		p.slab.Put(f.samples)
 	}
-	p.frames = p.frames[:0]
-	p.head = 0
+	p.total = 0
 }
 
 // SetDuration live-resizes the retention window to d, evicting the
@@ -217,37 +219,13 @@ func (p *PreRoll) SetDuration(d time.Duration) error {
 	return nil
 }
 
-// count reports the number of buffered frames.
-func (p *PreRoll) count() int { return len(p.frames) - p.head }
-
 // evictOverflow evicts whole oldest frames until the buffered total
-// fits capSamples again — always keeping at least one frame — then
-// re-anchors the queue.
+// fits capSamples again — always keeping at least one frame.
 func (p *PreRoll) evictOverflow() {
-	for p.count() > 1 && p.total > p.capSamples {
-		p.popOldest()
-	}
-	p.compact()
-}
-
-// popOldest evicts the oldest buffered frame, recycling its storage.
-func (p *PreRoll) popOldest() {
-	f := &p.frames[p.head]
-	p.total -= len(f.samples)
-	p.free = append(p.free, f.samples)
-	f.samples = nil
-	p.head++
-}
-
-// compact re-anchors the frame queue at index 0 once the dead prefix
-// left by popOldest dominates the slice, keeping the backing array
-// from growing without bound under a steady push/evict cycle.
-func (p *PreRoll) compact() {
-	if p.head > 0 && p.head >= len(p.frames)/2 {
-		n := copy(p.frames, p.frames[p.head:])
-		clear(p.frames[n:])
-		p.frames = p.frames[:n]
-		p.head = 0
+	for p.frames.Len() > 1 && p.total > p.capSamples {
+		f, _ := p.frames.Pop()
+		p.total -= len(f.samples)
+		p.slab.Put(f.samples)
 	}
 }
 
