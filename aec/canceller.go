@@ -56,6 +56,85 @@ type CancellerConfig struct {
 	// RenderChannels above: those three remain the only way to configure
 	// rate/channels, exactly as before.
 	Tuning *config.Config
+
+	// SuppressorGating selects when the nonlinear suppressor stage is
+	// allowed to attenuate the capture path. The zero value —
+	// SuppressorGatingOnConvergence — holds the suppressor inert until
+	// the canceller has demonstrated that it is modelling a real echo
+	// path, which is what a caller wants on any path where the capture
+	// signal might already be echo-free (see SuppressorGating).
+	SuppressorGating SuppressorGating
+}
+
+// SuppressorGating selects when a Canceller's nonlinear suppressor
+// stage may attenuate the capture path.
+//
+// AEC3's suppressor derives its attenuation from a residual-echo model
+// driven by the far-end signal. When the capture signal carries no echo
+// correlated with that far-end — because something upstream (an
+// operating-system or browser-side canceller, a headset, a network
+// endpoint that cancels before transmitting) already removed it — the
+// adaptive filter has nothing to model and never converges, yet the
+// suppressor still attenuates while the far end is active. On a
+// full-duplex voice path that swallows the beginning of every
+// interruption.
+//
+// The default gates the suppressor on evidence that the canceller is
+// actually cancelling something, so a Canceller can be left switched on
+// across every transport rather than disabled per transport. Where the
+// echo path is real the gate engages within a fraction of a second and
+// the canceller behaves exactly as it always has; where it is not, the
+// suppressor stays out of the capture path entirely. Metrics.Suppressor
+// reports which of the two a live stream is in.
+type SuppressorGating int
+
+const (
+	// SuppressorGatingOnConvergence holds the suppressor inert until the
+	// canceller demonstrates it is modelling a real echo path. Default.
+	SuppressorGatingOnConvergence SuppressorGating = iota
+	// SuppressorGatingAlwaysEngaged lets the suppressor attenuate from
+	// the first frame, whether or not the canceller ever converges —
+	// upstream AEC3's own behaviour. Appropriate only where the echo
+	// path is known to be real and the cost of an unconverged suppressor
+	// attenuating near-end audio is acceptable.
+	SuppressorGatingAlwaysEngaged
+)
+
+func (g SuppressorGating) internal() aec3.SuppressorGating {
+	if g == SuppressorGatingAlwaysEngaged {
+		return aec3.SuppressorGatingDisabled
+	}
+	return aec3.SuppressorGatingOnConvergence
+}
+
+// SuppressorState reports whether a Canceller's suppressor is currently
+// allowed to attenuate the capture path — see SuppressorGating, and
+// Metrics.Suppressor, which publishes it per processed capture frame.
+type SuppressorState int
+
+const (
+	// SuppressorEngaged: the suppressor is attenuating normally. Always
+	// the state under SuppressorGatingAlwaysEngaged, and the state
+	// before the first capture frame has been processed.
+	SuppressorEngaged SuppressorState = iota
+	// SuppressorTransitioning: the gate is ramping between engaged and
+	// bypassed.
+	SuppressorTransitioning
+	// SuppressorBypassed: the canceller has not demonstrated a real echo
+	// path, so the suppressor is inert and the capture path passes
+	// through it unattenuated.
+	SuppressorBypassed
+)
+
+func fromInternalSuppressorGate(s aec3.SuppressorGateState) SuppressorState {
+	switch s {
+	case aec3.SuppressorGateTransitioning:
+		return SuppressorTransitioning
+	case aec3.SuppressorGateBypassed:
+		return SuppressorBypassed
+	default:
+		return SuppressorEngaged
+	}
 }
 
 // ClockdriftLevel reports how confident the canceller's delay estimator
@@ -122,6 +201,13 @@ type Metrics struct {
 	// discarded render audio's echo will not be cancelled from the
 	// corresponding capture frames.
 	RenderFramesDropped uint64
+
+	// Suppressor reports whether the nonlinear suppressor stage is
+	// currently attenuating the capture path or has been gated out of
+	// it because the canceller has not demonstrated a real echo path —
+	// see SuppressorGating. Always SuppressorEngaged when the Canceller
+	// was configured with SuppressorGatingAlwaysEngaged.
+	Suppressor SuppressorState
 }
 
 // Canceller removes an estimated acoustic echo of a known far-end
@@ -273,6 +359,11 @@ func NewCanceller(cfg CancellerConfig) (*Canceller, error) {
 	if cfg.RenderChannels < 1 || cfg.RenderChannels > maxChannels {
 		return nil, ErrBadArg
 	}
+	switch cfg.SuppressorGating {
+	case SuppressorGatingOnConvergence, SuppressorGatingAlwaysEngaged:
+	default:
+		return nil, ErrBadArg
+	}
 
 	tuning := config.DefaultConfig()
 	if cfg.Tuning != nil {
@@ -299,6 +390,7 @@ func NewCanceller(cfg CancellerConfig) (*Canceller, error) {
 // by separately maintained reset logic.
 func (c *Canceller) buildEngineAndBuffers() {
 	c.engine = aec3.NewEchoCanceller3(c.tuning, c.cfg.SampleRate, c.cfg.RenderChannels, c.cfg.CaptureChannels)
+	c.engine.SetSuppressorGating(c.cfg.SuppressorGating.internal())
 
 	c.renderAccum = c.renderAccum[:0]
 	c.renderFrame = newFloatS16Frame(c.cfg.RenderChannels, c.numFrames)
@@ -462,6 +554,7 @@ func (c *Canceller) publishMetrics() {
 		EchoReturnLossEnhancement: m.EchoReturnLossEnhancement,
 		DelayMs:                   m.DelayMs,
 		Clockdrift:                fromInternalClockdrift(c.engine.Clockdrift()),
+		Suppressor:                fromInternalSuppressorGate(c.engine.SuppressorGate()),
 	})
 }
 

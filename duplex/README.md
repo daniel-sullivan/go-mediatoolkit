@@ -72,7 +72,9 @@ The audio goroutine **blocks** when the events channel is full rather than dropp
 
 ## The AEC coupling
 
-`aec.Canceller` requires `FeedFarEnd` and `Process` to be serialized onto one goroutine, paced roughly together — a contract that is easy to misuse when playback and capture live in different parts of a program. The engine internalises it: the same tick that emits a render frame feeds it to the canceller as far-end reference *before* the output callback fires, and capture frames are echo-cancelled on that same goroutine. `SetAudioBufferDelay` passes an external delay estimate through; `Metrics()` exposes ERL/ERLE/delay/clockdrift. Note the canceller's fixed 10 ms processing latency: a capture frame's post-DSP content lags its tag by one frame.
+`aec.Canceller` requires `FeedFarEnd` and `Process` to be serialized onto one goroutine, paced roughly together — a contract that is easy to misuse when playback and capture live in different parts of a program. The engine internalises it: the same tick that emits a render frame feeds it to the canceller as far-end reference *before* the output callback fires, and capture frames are echo-cancelled on that same goroutine. `SetAudioBufferDelay` passes an external delay estimate through; `Metrics()` exposes ERL/ERLE/delay/clockdrift and the suppressor gate state. Note the canceller's fixed 10 ms processing latency: a capture frame's post-DSP content lags its tag by one frame.
+
+The canceller's suppressor is gated on demonstrated convergence by default, so a capture path that arrives already echo-cancelled (a browser or OS canceller upstream, a headset, a network endpoint that cancels before transmitting) never has its near-end audio attenuated and barge-in stays as prompt as with no canceller at all — the engine can keep AEC switched on regardless of transport. `AECConfig.SuppressorGating` restores the ungated behaviour; see the [aec README](../aec/README.md#suppressor-gating).
 
 ## Detector ownership and tuning
 
@@ -84,7 +86,7 @@ The engine is the `Detector`'s **exclusive feeder** (the vad package's one-feede
 
 ## Verification
 
-`go test ./duplex/` covers tick pacing, underrun silence, chunk slicing/carry, seam crossfading (with a hard-cut control), ambient looping/clamping, barge-in, capture re-framing and tag assignment, burst absorption with bounded per-tick work, overflow accounting, the full FIFO event sequence with back-dated tags, in-speech guards, and an end-to-end AEC loopback: 8 s of far-end pink noise with a 60 ms/−6 dB synthetic echo path must converge to ≥ 15 dB echo reduction with **no** SpeechStart, then a genuine near-end tone superimposed mid-playout must fire one. `-race` clean.
+`go test ./duplex/` covers tick pacing, underrun silence, chunk slicing/carry, seam crossfading (with a hard-cut control), ambient looping/clamping, barge-in, capture re-framing and tag assignment, burst absorption with bounded per-tick work, overflow accounting, the full FIFO event sequence with back-dated tags, in-speech guards, and an end-to-end AEC loopback: 8 s of far-end pink noise with a 60 ms/−6 dB synthetic echo path must converge to ≥ 15 dB echo reduction with **no** SpeechStart, then a genuine near-end tone superimposed mid-playout must fire one. Two Silero-driven barge-in tests pin the suppressor gate in both directions: on a starved capture path an ungated suppressor delays the interruption by seconds while the gated default matches the no-canceller latency, and on a real loopback echo the gated and ungated runs behave identically with zero phantom detections. `-race` clean.
 
 `BenchmarkEngineTick_AECSileroPreRoll` measures the fully-loaded 10 ms tick (AEC + Silero + pre-roll): ~341 µs on an Apple M3 Pro core — headroom for ~29 concurrent sessions per core.
 

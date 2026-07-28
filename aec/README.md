@@ -56,7 +56,18 @@ m := c.Metrics()
 // m.EchoReturnLossEnhancement  — dB, suppressor-stage echo reduction on top of that
 // m.DelayMs                    — current estimated render→capture delay
 // m.Clockdrift                 — ClockdriftLevelNone/Probable/Verified
+// m.Suppressor                 — SuppressorEngaged/Transitioning/Bypassed
 ```
+
+### Suppressor gating
+
+AEC3's nonlinear suppressor derives its attenuation from a residual-echo model driven by the far-end signal. If the capture path carries no echo correlated with that far end — because something upstream already removed it (a browser or OS canceller, a headset, a network endpoint that cancels before transmitting) — the adaptive filter has nothing to model and never converges, yet the suppressor still attenuates whenever the far end is active. On a full-duplex voice path that swallows the beginning of every interruption: the near end has to talk over the far end for a second or more before it is heard.
+
+Upstream's own remedy, transparent mode, addresses a different case — an echo path that *was* there and has gone away — and is correspondingly slow and sticky: it cannot activate until 6 s of active render have accumulated, latches off on a single spurious convergence blip, and needs 60 s of contiguous active non-converged render to clear that latch. The damaging window is over long before it can help.
+
+So by default a `Canceller` gates its suppressor on demonstrated convergence: until the canceller produces positive evidence that it is modelling a real echo path, the suppressor's gains are held at unity and the capture path passes through it unattenuated. Two independent signals count as evidence — a delay estimate the matched-filter aggregator has labelled *refined* (its own "reliable delay found" verdict), and a fullband ERLE clear of its floor, which cannot be sustained against an uncorrelated reference because the least-squares optimum there is the zero filter. The suppressor is given a fair chance first: one full lag-aggregator histogram window (250 blocks) of *active, unsaturated render*, so a silent far end never burns the window, and a stream with a real echo path engages before the gate can ever open.
+
+The decision is monotone by construction — the evidence latch is never cleared and the render-block count only grows — so across a stream the gate can bypass at most once and engage at most once, in that order, with a 100 ms ramp on each transition. It cannot chatter across an utterance. `Metrics().Suppressor` reports which state a live stream is in. `CancellerConfig.SuppressorGating = SuppressorGatingAlwaysEngaged` restores upstream's ungated behaviour.
 
 ## Tuning
 

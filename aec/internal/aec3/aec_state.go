@@ -456,6 +456,13 @@ func (a *AecState) ErlTimeDomain() float32 { return a.erlEstimator.ErlTimeDomain
 // linear filter. C: AecState::MinDirectPathFilterDelay.
 func (a *AecState) MinDirectPathFilterDelay() int { return a.delayState.MinDirectPathFilterDelay() }
 
+// StrongNotSaturatedRenderBlocks returns how many blocks of active,
+// unsaturated render have been seen since the last echo path change.
+// Read-only Go-port-only accessor for a field upstream keeps private:
+// suppressor_gate.go needs it to judge how much of a chance the delay
+// estimator has had to find an echo path.
+func (a *AecState) StrongNotSaturatedRenderBlocks() int { return a.strongNotSaturatedRenderBlocks }
+
 // SaturatedCapture returns whether the capture signal is saturated.
 // C: AecState::SaturatedCapture.
 func (a *AecState) SaturatedCapture() bool { return a.captureSignalSaturation }

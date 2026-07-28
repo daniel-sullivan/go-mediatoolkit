@@ -441,6 +441,21 @@ func (ec *EchoCanceller3) UpdateEchoLeakageStatus(leakageDetected bool) {
 	ec.blockProcessor.UpdateEchoLeakageStatus(leakageDetected)
 }
 
+// SetSuppressorGating selects whether the suppressor is gated on
+// demonstrated convergence. Go-port-only, beyond upstream; see
+// suppressor_gate.go. The default (SuppressorGatingDisabled) reproduces
+// upstream AEC3 exactly.
+func (ec *EchoCanceller3) SetSuppressorGating(mode SuppressorGating) {
+	ec.blockProcessor.SetSuppressorGating(mode)
+}
+
+// SuppressorGate reports whether the suppressor is currently allowed to
+// attenuate the capture path. Go-port-only, beyond upstream; see
+// suppressor_gate.go.
+func (ec *EchoCanceller3) SuppressorGate() SuppressorGateState {
+	return ec.blockProcessor.SuppressorGate()
+}
+
 // Clockdrift reports the clockdrift level currently detected by the
 // render delay controller. Go-port-only addition; see
 // BlockProcessor.Clockdrift's doc comment (block_processor.go).

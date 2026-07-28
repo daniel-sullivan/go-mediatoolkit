@@ -180,6 +180,20 @@ func (bp *BlockProcessor) SetCaptureOutputUsage(captureOutputUsed bool) {
 	bp.echoRemover.SetCaptureOutputUsage(captureOutputUsed)
 }
 
+// SetSuppressorGating selects whether the echo remover's suppressor is
+// gated on demonstrated convergence. Go-port-only, beyond upstream; see
+// suppressor_gate.go.
+func (bp *BlockProcessor) SetSuppressorGating(mode SuppressorGating) {
+	bp.echoRemover.SetSuppressorGating(mode)
+}
+
+// SuppressorGate reports whether the suppressor is currently allowed to
+// attenuate the capture path. Go-port-only, beyond upstream; see
+// suppressor_gate.go.
+func (bp *BlockProcessor) SuppressorGate() SuppressorGateState {
+	return bp.echoRemover.SuppressorGate()
+}
+
 // Clockdrift reports the clockdrift level currently detected by the
 // internal RenderDelayController's ClockdriftDetector. Go-port-only
 // addition, documented as beyond upstream: upstream only threads

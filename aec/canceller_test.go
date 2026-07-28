@@ -36,6 +36,8 @@ func TestNewCanceller_Validation(t *testing.T) {
 		{"too many capture channels", CancellerConfig{SampleRate: 16000, CaptureChannels: maxChannels + 1, RenderChannels: 1}, ErrBadArg},
 		{"zero render channels", CancellerConfig{SampleRate: 16000, CaptureChannels: 1, RenderChannels: 0}, ErrBadArg},
 		{"too many render channels", CancellerConfig{SampleRate: 16000, CaptureChannels: 1, RenderChannels: maxChannels + 1}, ErrBadArg},
+		{"always-engaged suppressor", CancellerConfig{SampleRate: 16000, CaptureChannels: 1, RenderChannels: 1, SuppressorGating: SuppressorGatingAlwaysEngaged}, nil},
+		{"unknown suppressor gating", CancellerConfig{SampleRate: 16000, CaptureChannels: 1, RenderChannels: 1, SuppressorGating: SuppressorGatingAlwaysEngaged + 1}, ErrBadArg},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

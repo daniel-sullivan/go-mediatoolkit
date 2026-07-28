@@ -103,6 +103,7 @@ type EchoRemover struct {
 	captureOutputUsed     bool
 	aecState              *AecState
 	metrics               *EchoRemoverMetrics
+	suppressorGate        *suppressorGate
 	eOld                  [][FFTLengthBy2]float32
 	yOld                  [][FFTLengthBy2]float32
 	blockCounter          int
@@ -130,6 +131,7 @@ func NewEchoRemover(config config.Config, sampleRateHz, numRenderChannels, numCa
 		captureOutputUsed:               true,
 		aecState:                        NewAecState(config, numCaptureChannels),
 		metrics:                         NewEchoRemoverMetrics(),
+		suppressorGate:                  newSuppressorGate(),
 		eOld:                            make([][FFTLengthBy2]float32, numCaptureChannels),
 		yOld:                            make([][FFTLengthBy2]float32, numCaptureChannels),
 		refinedFilterOutputLastSelected: true,
@@ -161,6 +163,20 @@ func (r *EchoRemover) UpdateEchoLeakageStatus(leakageDetected bool) {
 // used. C: EchoRemoverImpl::SetCaptureOutputUsage.
 func (r *EchoRemover) SetCaptureOutputUsage(captureOutputUsed bool) {
 	r.captureOutputUsed = captureOutputUsed
+}
+
+// SetSuppressorGating selects whether the suppressor is gated on
+// demonstrated convergence. Go-port-only, beyond upstream; see
+// suppressor_gate.go.
+func (r *EchoRemover) SetSuppressorGating(mode SuppressorGating) {
+	r.suppressorGate.SetGating(mode)
+}
+
+// SuppressorGate reports whether the suppressor is currently allowed
+// to attenuate the capture path. Go-port-only, beyond upstream; see
+// suppressor_gate.go.
+func (r *EchoRemover) SuppressorGate() SuppressorGateState {
+	return r.suppressorGate.State()
 }
 
 // formLinearFilterOutput selects which of the coarse and refined
@@ -324,6 +340,14 @@ func (r *EchoRemover) ProcessCapture(echoPathVariability EchoPathVariability, ca
 		// Compute preferred gains.
 		var highBandsGain float32
 		r.suppressionGain.GetGain(nearendSpectrum, echoSpectrum, R2, R2Unbounded, r.cng.NoiseSpectrum(), r.renderSignalAnalyzer, r.aecState, x, clockDrift, &highBandsGain, &G)
+
+		// Relax the gains towards unity while the canceller has not
+		// shown that it is modelling a real echo path. A no-op unless
+		// the caller opted in (see suppressor_gate.go). Applied to the
+		// suppressor's output rather than its state, so the suppressor
+		// keeps adapting and is already tracking when the gate engages.
+		r.suppressorGate.Update(r.aecState, externalDelay)
+		r.suppressorGate.Apply(&G, &highBandsGain)
 
 		r.suppressionFilter.ApplyGain(comfortNoise, highBandComfortNoise, G, highBandsGain, YFft, y)
 	} else {

@@ -118,6 +118,14 @@ type AECConfig struct {
 	// Tuning selects AEC3's internal tuning parameters; nil selects
 	// aec/config.DefaultConfig(). See aec.CancellerConfig.Tuning.
 	Tuning *aecconfig.Config
+
+	// SuppressorGating selects when the suppressor may attenuate the
+	// capture path. The zero value gates it on demonstrated
+	// convergence, so a capture path that arrives already
+	// echo-cancelled never has its near-end audio suppressed and the
+	// engine can keep AEC switched on regardless of transport. See
+	// aec.CancellerConfig.SuppressorGating.
+	SuppressorGating aec.SuppressorGating
 }
 
 // AmbientConfig loops a fixed audio bed under the rendered voice —
@@ -351,10 +359,11 @@ func New(cfg Config) (*Engine, error) {
 	var canceller *aec.Canceller
 	if cfg.AEC != nil {
 		c, err := aec.NewCanceller(aec.CancellerConfig{
-			SampleRate:      cfg.SampleRate,
-			CaptureChannels: cfg.Channels,
-			RenderChannels:  cfg.Channels,
-			Tuning:          cfg.AEC.Tuning,
+			SampleRate:       cfg.SampleRate,
+			CaptureChannels:  cfg.Channels,
+			RenderChannels:   cfg.Channels,
+			Tuning:           cfg.AEC.Tuning,
+			SuppressorGating: cfg.AEC.SuppressorGating,
 		})
 		if err != nil {
 			return nil, err

@@ -54,6 +54,23 @@
 // set (mirroring EchoCanceller3Config field-for-field) and the
 // README's Tuning section for a worked example.
 //
+// # Suppressor gating
+//
+// AEC3's nonlinear suppressor attenuates the capture path whenever its
+// far-end-driven residual-echo model says echo is present. On a capture
+// path that carries no correlated echo — because something upstream
+// (a browser or operating-system canceller, a headset, a network
+// endpoint that cancels before transmitting) already removed it — the
+// adaptive filter never converges, and an ungated suppressor spends
+// every far-end burst attenuating genuine near-end speech instead. By
+// default a Canceller therefore holds its suppressor inert until the
+// canceller demonstrates that it is modelling a real echo path, so it
+// is safe to leave switched on regardless of what the capture path has
+// already been through; Metrics.Suppressor reports the state and
+// CancellerConfig.SuppressorGating restores upstream's ungated
+// behaviour. See SuppressorGating and the README's Suppressor gating
+// section.
+//
 // # Implementation
 //
 // A 1:1 port of WebRTC's AEC3 (github.com freedesktop

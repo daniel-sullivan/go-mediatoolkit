@@ -2719,7 +2719,18 @@ m := c.Metrics()
 // m.EchoReturnLossEnhancement  — dB, suppressor-stage echo reduction on top of that
 // m.DelayMs                    — current estimated render→capture delay
 // m.Clockdrift                 — ClockdriftLevelNone/Probable/Verified
+// m.Suppressor                 — SuppressorEngaged/Transitioning/Bypassed
 ```
+
+### Suppressor gating
+
+AEC3's nonlinear suppressor derives its attenuation from a residual-echo model driven by the far-end signal. If the capture path carries no echo correlated with that far end — because something upstream already removed it (a browser or OS canceller, a headset, a network endpoint that cancels before transmitting) — the adaptive filter has nothing to model and never converges, yet the suppressor still attenuates whenever the far end is active. On a full-duplex voice path that swallows the beginning of every interruption: the near end has to talk over the far end for a second or more before it is heard.
+
+Upstream's own remedy, transparent mode, addresses a different case — an echo path that *was* there and has gone away — and is correspondingly slow and sticky: it cannot activate until 6 s of active render have accumulated, latches off on a single spurious convergence blip, and needs 60 s of contiguous active non-converged render to clear that latch. The damaging window is over long before it can help.
+
+So by default a `Canceller` gates its suppressor on demonstrated convergence: until the canceller produces positive evidence that it is modelling a real echo path, the suppressor's gains are held at unity and the capture path passes through it unattenuated. Two independent signals count as evidence — a delay estimate the matched-filter aggregator has labelled *refined* (its own "reliable delay found" verdict), and a fullband ERLE clear of its floor, which cannot be sustained against an uncorrelated reference because the least-squares optimum there is the zero filter. The suppressor is given a fair chance first: one full lag-aggregator histogram window (250 blocks) of *active, unsaturated render*, so a silent far end never burns the window, and a stream with a real echo path engages before the gate can ever open.
+
+The decision is monotone by construction — the evidence latch is never cleared and the render-block count only grows — so across a stream the gate can bypass at most once and engage at most once, in that order, with a 100 ms ramp on each transition. It cannot chatter across an utterance. `Metrics().Suppressor` reports which state a live stream is in. `CancellerConfig.SuppressorGating = SuppressorGatingAlwaysEngaged` restores upstream's ungated behaviour.
 
 ## Tuning
 
@@ -3004,7 +3015,9 @@ The audio goroutine **blocks** when the events channel is full rather than dropp
 
 ## The AEC coupling
 
-`aec.Canceller` requires `FeedFarEnd` and `Process` to be serialized onto one goroutine, paced roughly together — a contract that is easy to misuse when playback and capture live in different parts of a program. The engine internalises it: the same tick that emits a render frame feeds it to the canceller as far-end reference *before* the output callback fires, and capture frames are echo-cancelled on that same goroutine. `SetAudioBufferDelay` passes an external delay estimate through; `Metrics()` exposes ERL/ERLE/delay/clockdrift. Note the canceller's fixed 10 ms processing latency: a capture frame's post-DSP content lags its tag by one frame.
+`aec.Canceller` requires `FeedFarEnd` and `Process` to be serialized onto one goroutine, paced roughly together — a contract that is easy to misuse when playback and capture live in different parts of a program. The engine internalises it: the same tick that emits a render frame feeds it to the canceller as far-end reference *before* the output callback fires, and capture frames are echo-cancelled on that same goroutine. `SetAudioBufferDelay` passes an external delay estimate through; `Metrics()` exposes ERL/ERLE/delay/clockdrift and the suppressor gate state. Note the canceller's fixed 10 ms processing latency: a capture frame's post-DSP content lags its tag by one frame.
+
+The canceller's suppressor is gated on demonstrated convergence by default, so a capture path that arrives already echo-cancelled (a browser or OS canceller upstream, a headset, a network endpoint that cancels before transmitting) never has its near-end audio attenuated and barge-in stays as prompt as with no canceller at all — the engine can keep AEC switched on regardless of transport. `AECConfig.SuppressorGating` restores the ungated behaviour; see the [aec README](../aec/README.md#suppressor-gating).
 
 ## Detector ownership and tuning
 
@@ -3016,7 +3029,7 @@ The engine is the `Detector`'s **exclusive feeder** (the vad package's one-feede
 
 ## Verification
 
-`go test ./duplex/` covers tick pacing, underrun silence, chunk slicing/carry, seam crossfading (with a hard-cut control), ambient looping/clamping, barge-in, capture re-framing and tag assignment, burst absorption with bounded per-tick work, overflow accounting, the full FIFO event sequence with back-dated tags, in-speech guards, and an end-to-end AEC loopback: 8 s of far-end pink noise with a 60 ms/−6 dB synthetic echo path must converge to ≥ 15 dB echo reduction with **no** SpeechStart, then a genuine near-end tone superimposed mid-playout must fire one. `-race` clean.
+`go test ./duplex/` covers tick pacing, underrun silence, chunk slicing/carry, seam crossfading (with a hard-cut control), ambient looping/clamping, barge-in, capture re-framing and tag assignment, burst absorption with bounded per-tick work, overflow accounting, the full FIFO event sequence with back-dated tags, in-speech guards, and an end-to-end AEC loopback: 8 s of far-end pink noise with a 60 ms/−6 dB synthetic echo path must converge to ≥ 15 dB echo reduction with **no** SpeechStart, then a genuine near-end tone superimposed mid-playout must fire one. Two Silero-driven barge-in tests pin the suppressor gate in both directions: on a starved capture path an ungated suppressor delays the interruption by seconds while the gated default matches the no-canceller latency, and on a real loopback echo the gated and ungated runs behave identically with zero phantom detections. `-race` clean.
 
 `BenchmarkEngineTick_AECSileroPreRoll` measures the fully-loaded 10 ms tick (AEC + Silero + pre-roll): ~341 µs on an Apple M3 Pro core — headroom for ~29 concurrent sessions per core.
 
@@ -6260,6 +6273,21 @@ if it would need clamping. See config's package doc for the full field set
 (mirroring EchoCanceller3Config field-for-field) and the README's Tuning section
 for a worked example.
 
+# Suppressor gating
+
+AEC3's nonlinear suppressor attenuates the capture path whenever its
+far-end-driven residual-echo model says echo is present. On a capture path
+that carries no correlated echo — because something upstream (a browser or
+operating-system canceller, a headset, a network endpoint that cancels before
+transmitting) already removed it — the adaptive filter never converges,
+and an ungated suppressor spends every far-end burst attenuating genuine
+near-end speech instead. By default a Canceller therefore holds its suppressor
+inert until the canceller demonstrates that it is modelling a real echo path,
+so it is safe to leave switched on regardless of what the capture path
+has already been through; Metrics.Suppressor reports the state and
+CancellerConfig.SuppressorGating restores upstream's ungated behaviour.
+See SuppressorGating and the README's Suppressor gating section.
+
 # Implementation
 
 A 1:1 port of WebRTC's AEC3 (github.com freedesktop webrtc-audio-processing
@@ -6546,6 +6574,14 @@ type CancellerConfig struct {
 	// RenderChannels above: those three remain the only way to configure
 	// rate/channels, exactly as before.
 	Tuning *config.Config
+
+	// SuppressorGating selects when the nonlinear suppressor stage is
+	// allowed to attenuate the capture path. The zero value —
+	// SuppressorGatingOnConvergence — holds the suppressor inert until
+	// the canceller has demonstrated that it is modelling a real echo
+	// path, which is what a caller wants on any path where the capture
+	// signal might already be echo-free (see SuppressorGating).
+	SuppressorGating SuppressorGating
 }
     CancellerConfig configures a Canceller.
 
@@ -6599,9 +6635,67 @@ type Metrics struct {
 	// discarded render audio's echo will not be cancelled from the
 	// corresponding capture frames.
 	RenderFramesDropped uint64
+
+	// Suppressor reports whether the nonlinear suppressor stage is
+	// currently attenuating the capture path or has been gated out of
+	// it because the canceller has not demonstrated a real echo path —
+	// see SuppressorGating. Always SuppressorEngaged when the Canceller
+	// was configured with SuppressorGatingAlwaysEngaged.
+	Suppressor SuppressorState
 }
     Metrics is a snapshot of the canceller's current internal state, updated
     once per processed capture frame (see Metrics(), Process).
+
+type SuppressorGating int
+    SuppressorGating selects when a Canceller's nonlinear suppressor stage may
+    attenuate the capture path.
+
+    AEC3's suppressor derives its attenuation from a residual-echo model driven
+    by the far-end signal. When the capture signal carries no echo correlated
+    with that far-end — because something upstream (an operating-system or
+    browser-side canceller, a headset, a network endpoint that cancels before
+    transmitting) already removed it — the adaptive filter has nothing to model
+    and never converges, yet the suppressor still attenuates while the far end
+    is active. On a full-duplex voice path that swallows the beginning of every
+    interruption.
+
+    The default gates the suppressor on evidence that the canceller is actually
+    cancelling something, so a Canceller can be left switched on across every
+    transport rather than disabled per transport. Where the echo path is real
+    the gate engages within a fraction of a second and the canceller behaves
+    exactly as it always has; where it is not, the suppressor stays out of the
+    capture path entirely. Metrics.Suppressor reports which of the two a live
+    stream is in.
+
+const (
+	// SuppressorGatingOnConvergence holds the suppressor inert until the
+	// canceller demonstrates it is modelling a real echo path. Default.
+	SuppressorGatingOnConvergence SuppressorGating = iota
+	// SuppressorGatingAlwaysEngaged lets the suppressor attenuate from
+	// the first frame, whether or not the canceller ever converges —
+	// upstream AEC3's own behaviour. Appropriate only where the echo
+	// path is known to be real and the cost of an unconverged suppressor
+	// attenuating near-end audio is acceptable.
+	SuppressorGatingAlwaysEngaged
+)
+type SuppressorState int
+    SuppressorState reports whether a Canceller's suppressor is currently
+    allowed to attenuate the capture path — see SuppressorGating, and
+    Metrics.Suppressor, which publishes it per processed capture frame.
+
+const (
+	// SuppressorEngaged: the suppressor is attenuating normally. Always
+	// the state under SuppressorGatingAlwaysEngaged, and the state
+	// before the first capture frame has been processed.
+	SuppressorEngaged SuppressorState = iota
+	// SuppressorTransitioning: the gate is ramping between engaged and
+	// bypassed.
+	SuppressorTransitioning
+	// SuppressorBypassed: the canceller has not demonstrated a real echo
+	// path, so the suppressor is inert and the capture path passes
+	// through it unattenuated.
+	SuppressorBypassed
+)
 
 --------------------------------------------------------------------------------
 Source: go doc -all github.com/daniel-sullivan/go-mediatoolkit/aec/config
@@ -10258,6 +10352,14 @@ type AECConfig struct {
 	// Tuning selects AEC3's internal tuning parameters; nil selects
 	// aec/config.DefaultConfig(). See aec.CancellerConfig.Tuning.
 	Tuning *aecconfig.Config
+
+	// SuppressorGating selects when the suppressor may attenuate the
+	// capture path. The zero value gates it on demonstrated
+	// convergence, so a capture path that arrives already
+	// echo-cancelled never has its near-end audio suppressed and the
+	// engine can keep AEC switched on regardless of transport. See
+	// aec.CancellerConfig.SuppressorGating.
+	SuppressorGating aec.SuppressorGating
 }
     AECConfig enables acoustic echo cancellation. The engine builds the
     aec.Canceller itself (rate and channels come from the enclosing Config) and
